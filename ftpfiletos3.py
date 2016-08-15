@@ -18,10 +18,11 @@ def main():
 def parse_upload_file_line(line):
     import sys
     import boto3
-    from datetime import date, timedelta
+    from datetime import datetime, date, timedelta
     start_date = date.today()
+    start_time = datetime.time()
     date_string = start_date.strftime('%Y') + "-" + start_date.strftime("%m") + "-" + start_date.strftime("%d")
-    hour_string = "Hour-" + start_date.hour
+    hour_string = "Hour-" + start_time.hour
     base_dir = "/home/securityspy/security-images/alarm-images"
     line_parts = line.split(",")
     sys.stdout.write("File for upload is: " + line_parts[1] + " with file size: " + line_parts[2] + "\n")
