@@ -21,7 +21,7 @@ def parse_upload_file_line(line):
     from datetime import datetime, date, timedelta
     start_date = datetime.now()
     date_string = start_date.strftime('%Y') + "-" + start_date.strftime("%m") + "-" + start_date.strftime("%d")
-    hour_string = "Hour-" + start_date.hour
+    hour_string = "Hour-" + str(start_date.hour)
     base_dir = "/home/securityspy/security-images/alarm-images"
     line_parts = line.split(",")
     sys.stdout.write("File for upload is: " + line_parts[1] + " with file size: " + line_parts[2] + "\n")
@@ -31,7 +31,7 @@ def parse_upload_file_line(line):
     path_parts = path_end.split('/')
     sys.stdout.write("File of type: " + path_parts[3] + " for camera " + path_parts[1] + " with file name " + path_parts[4] + "\n")
     s3_object = '/' + path_parts[1] + '/' + date_string + '/' + hour_string + '/' + path_parts[1] + '/' + path_parts[4]
-    s3.Object('security-alarms', s3_object).put(Body=open(line_parts[1], 'rb'))
+    s3.Object('security-alarms', s3_object).put(Body=open(line_parts[1].strip(), 'rb'))
     sys.exit(0)
 
 if __name__ == "__main__":
