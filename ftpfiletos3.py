@@ -1,8 +1,8 @@
+import sys, threading
 from tail import follow
 
 
 def main():
-    import sys
     base_dir = "/home/securityspy/security-images/alarm-images"
     ftp_log_file = "/var/log/vsftpd.log"
 
@@ -10,9 +10,15 @@ def main():
         following.seek(-64, 2)
         try:
             for line in follow(following):
-                sys.stdout.write(line)
+                if "OK UPLOAD" in line:
+                    sys.stdout.write(line)
+                    t = threading.Thread(target=parse_upload_file_line, args=(line)).start()
         except KeyboardInterrupt:
             pass
+
+def parse_upload_file_line(line):
+    line_parts = line.split(",")
+    sys.stdout.write(line_parts[3])
 
 if __name__ == "__main__":
     main()
