@@ -30,7 +30,7 @@ def parse_upload_file_line(line):
     s3 = boto3.resource('s3')
     # Parse the file name to get the sub-folder and object name
     path_end = file_name.replace(base_dir, "")
-    path_parts = path_end.split('/')
+    path_parts = file_name.split('/')
     # Clean up parens in the file name
     path_parts[4] = path_parts[4].replace('(','')
     path_parts[4] = path_parts[4].replace(')', '')
