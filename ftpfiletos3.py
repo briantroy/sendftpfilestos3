@@ -12,7 +12,7 @@ def main():
             for line in follow(following):
                 if "OK UPLOAD" in line:
                     sys.stdout.write(line)
-                    t = threading.Thread(target=parse_upload_file_line, args=(line)).start()
+                    t = threading.Thread(target=parse_upload_file_line, args=(line, )).start()
         except KeyboardInterrupt:
             pass
 
