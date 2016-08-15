@@ -32,6 +32,7 @@ def parse_upload_file_line(line):
     path_end = file_name.replace(base_dir, "")
     path_parts = path_end.split('/')
     # Clean up parens in the file name
+    sys.stdout.print(path_parts)
     path_parts[4] = path_parts[4].replace('(','')
     path_parts[4] = path_parts[4].replace(')', '')
     sys.stdout.write("File of type: " + path_parts[3] + " for camera " + path_parts[1] + " with file name " + path_parts[4] + "\n")
