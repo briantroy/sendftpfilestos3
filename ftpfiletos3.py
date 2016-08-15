@@ -25,7 +25,7 @@ def parse_upload_file_line(line):
     # Parse the file name to get the sub-folder and object name
     path_end = line_parts[1].replace(base_dir, "")
     path_parts = path_end.split('/')
-    sys.stdout.write("File of type: " + path_parts[2] + " for camera " + path_parts[0] + " with file name " + path_parts[3] + "\n")
+    sys.stdout.write("File of type: " + path_parts[3] + " for camera " + path_parts[1] + " with file name " + path_parts[4] + "\n")
 
     # s3.Object('security-alarms', foo).put(Body=open('/tmp/hello.txt', 'rb'))
     sys.exit(0)
