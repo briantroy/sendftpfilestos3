@@ -24,15 +24,14 @@ def parse_upload_file_line(line):
     hour_string = "Hour-" + str(start_date.hour)
     base_dir = "/home/securityspy/security-images/alarm-images"
     line_parts = line.split(",")
-    sys.stdout.write("File for upload is: " + line_parts[1] + " with file size: " + line_parts[2] + "\n")
     file_name = line_parts[1].strip()
     file_name = file_name.replace('"', '')
+    sys.stdout.write("File for upload is: " + file_name + " with file size: " + line_parts[2] + "\n")
     s3 = boto3.resource('s3')
     # Parse the file name to get the sub-folder and object name
     path_end = file_name.replace(base_dir, "")
     path_parts = path_end.split('/')
     # Clean up parens in the file name
-    sys.stdout.write(path_parts)
     path_parts[4] = path_parts[4].replace('(','')
     path_parts[4] = path_parts[4].replace(')', '')
     sys.stdout.write("File of type: " + path_parts[3] + " for camera " + path_parts[1] + " with file name " + path_parts[4] + "\n")
