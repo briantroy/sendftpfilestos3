@@ -30,7 +30,7 @@ def parse_upload_file_line(line):
     path_end = line_parts[1].replace(base_dir, "")
     path_parts = path_end.split('/')
     sys.stdout.write("File of type: " + path_parts[3] + " for camera " + path_parts[1] + " with file name " + path_parts[4] + "\n")
-    s3_object = "/" + path_parts[1] + "/" date_string + "/" + hour_string + "/" + path_parts[1] + "/" + path_parts[4]
+    s3_object = '/' + path_parts[1] + '/' + date_string + '/' + hour_string + '/' + path_parts[1] + '/' + path_parts[4]
     s3.Object('security-alarms', s3_object).put(Body=open(line_parts[1], 'rb'))
     sys.exit(0)
 
