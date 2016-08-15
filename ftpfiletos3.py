@@ -18,7 +18,7 @@ def main():
 
 def parse_upload_file_line(line):
     line_parts = line.split(",")
-    sys.stdout.write(line_parts[3])
+    sys.stdout.write(line_parts[2])
 
 if __name__ == "__main__":
     main()
