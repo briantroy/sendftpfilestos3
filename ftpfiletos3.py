@@ -2,6 +2,7 @@ from tail import follow
 
 
 def main():
+    import sys
     base_dir = "/home/securityspy/security-images/alarm-images"
     ftp_log_file = "/var/log/vsftpd.log"
 
@@ -15,4 +16,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-    
