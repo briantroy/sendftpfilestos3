@@ -31,9 +31,9 @@ def parse_upload_file_line(line):
     # Parse the file name to get the sub-folder and object name
     path_end = file_name.replace(base_dir, "")
     path_parts = path_end.split('/')
-    print path_parts
     if len(path_parts) != 5:
         lastpart = len(path_parts)
+        sys.stdout.write("Found a non-comliant path with " + lastpart + " parts")
         # Clean up parens in the file name
         just_file = path_parts[lastpart].replace('(', '')
         just_file = just_file.replace(')', '')
