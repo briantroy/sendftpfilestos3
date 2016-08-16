@@ -32,7 +32,7 @@ def parse_upload_file_line(line):
     path_end = file_name.replace(base_dir, "")
     path_parts = path_end.split('/')
     print path_parts
-    if len(path_parts) != 4:
+    if len(path_parts) != 5:
         lastpart = len(path_parts)
         # Clean up parens in the file name
         just_file = path_parts[lastpart].replace('(', '')
