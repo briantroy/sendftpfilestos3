@@ -33,7 +33,7 @@ def parse_upload_file_line(line):
     path_parts = path_end.split('/')
     if len(path_parts) != 5:
         lastpart = len(path_parts)
-        sys.stdout.write("Found a non-comliant path with {} parts".format(lastpart))
+        sys.stdout.write("Found a non-comliant path with " + str(lastpart) + " parts")
         # Clean up parens in the file name
         just_file = path_parts[lastpart].replace('(', '')
         just_file = just_file.replace(')', '')
