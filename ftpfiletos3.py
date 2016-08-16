@@ -54,7 +54,7 @@ def parse_upload_file_line(line):
     s3_object = 'patrolcams/' + path_parts[1] + '/' + date_string + '/' + hour_string + '/' + img_type + '/' + just_file
     s3.Object('security-alarms', s3_object).put(Body=open(file_name, 'rb'))
     totaltime = time.time() - start_timing
-    logging.info("S3 Object: {} written to s3 in {} seconds.".format(s3_object), totaltime)
+    logging.info("S3 Object: {} written to s3 in {} seconds.".format(s3_object, totaltime))
     sys.exit(0)
 
 if __name__ == "__main__":
