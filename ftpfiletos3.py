@@ -18,17 +18,24 @@ def main():
 def parse_upload_file_line(line):
     import sys
     import boto3
+    import logging
     from datetime import datetime, date, timedelta
+
+    # Set Up
+    base_dir = "/home/securityspy/security-images/alarm-images"
+    logging.basicConfig(filename="securitys3uploader.log", level=logging.DEBUG)
+
+
     start_date = datetime.now()
     date_string = start_date.strftime('%Y') + "-" + start_date.strftime("%m") + "-" + start_date.strftime("%d")
     hour_string = "Hour-" + str(start_date.hour)
-    base_dir = "/home/securityspy/security-images/alarm-images"
+
     line_parts = line.split(",")
     file_name = line_parts[1].strip()
     file_name = file_name.replace('"', '')
-    sys.stdout.write("File for upload is: " + file_name + " with file size: " + line_parts[2] + "\n")
+    logging.debug("File for upload is: {} with file size: {}".format(file_name, line_parts[2]))
     s3 = boto3.resource('s3')
-    # Parse the file name to get the sub-folder and object name
+    # Parse the file name to get the sub-folder and object name.
     path_end = file_name.replace(base_dir, "")
     path_parts = path_end.split('/')
     if len(path_parts) != 5:
@@ -42,10 +49,9 @@ def parse_upload_file_line(line):
         just_file = path_parts[4]
     # fin
 
-    sys.stdout.write("File of type: " + img_type + " for camera " + path_parts[1] + " with file name " + just_file + "\n")
     s3_object = 'patrolcams/' + path_parts[1] + '/' + date_string + '/' + hour_string + '/' + img_type + '/' + just_file
-    sys.stdout.write("Object will be written in the object: " + s3_object + "\n")
     s3.Object('security-alarms', s3_object).put(Body=open(file_name, 'rb'))
+    logging.debug("S3 Object: {} written to s3.".format(s3_object))
     sys.exit(0)
 
 if __name__ == "__main__":
