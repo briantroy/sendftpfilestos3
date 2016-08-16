@@ -31,11 +31,19 @@ def parse_upload_file_line(line):
     # Parse the file name to get the sub-folder and object name
     path_end = file_name.replace(base_dir, "")
     path_parts = path_end.split('/')
-    # Clean up parens in the file name
-    just_file = path_parts[4].replace('(','')
-    just_file = just_file.replace(')', '')
-    sys.stdout.write("File of type: " + path_parts[3] + " for camera " + path_parts[1] + " with file name " + just_file + "\n")
-    s3_object = 'patrolcams/' + path_parts[1] + '/' + date_string + '/' + hour_string + '/' + path_parts[3] + '/' + path_parts[4]
+    if len(path_parts) != 4:
+        lastpart = len(path_parts)
+        # Clean up parens in the file name
+        just_file = path_parts[lastpart].replace('(', '')
+        just_file = just_file.replace(')', '')
+        img_type = "snap"
+    else:
+        img_type = path_parts[3]
+        just_file = path_parts[4]
+    # fin
+
+    sys.stdout.write("File of type: " + img_type + " for camera " + path_parts[1] + " with file name " + just_file + "\n")
+    s3_object = 'patrolcams/' + path_parts[1] + '/' + date_string + '/' + hour_string + '/' + img_type + '/' + just_file
     sys.stdout.write("Object will be written in the object: " + s3_object + "\n")
     s3.Object('security-alarms', s3_object).put(Body=open(file_name, 'rb'))
     sys.exit(0)
