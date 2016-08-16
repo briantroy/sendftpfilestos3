@@ -19,12 +19,14 @@ def parse_upload_file_line(line):
     import sys
     import boto3
     import logging
+    import time
     from datetime import datetime, date, timedelta
 
     # Set Up
     base_dir = "/home/securityspy/security-images/alarm-images"
     logging.basicConfig(filename="securitys3uploader.log", level=logging.INFO)
 
+    start_timing = time.time()
 
     start_date = datetime.now()
     date_string = start_date.strftime('%Y') + "-" + start_date.strftime("%m") + "-" + start_date.strftime("%d")
@@ -51,7 +53,8 @@ def parse_upload_file_line(line):
 
     s3_object = 'patrolcams/' + path_parts[1] + '/' + date_string + '/' + hour_string + '/' + img_type + '/' + just_file
     s3.Object('security-alarms', s3_object).put(Body=open(file_name, 'rb'))
-    logging.info("S3 Object: {} written to s3.".format(s3_object))
+    totaltime = time.time() - start_timing
+    logging.info("S3 Object: {} written to s3 in {} seconds.".format(s3_object), totaltime)
     sys.exit(0)
 
 if __name__ == "__main__":
