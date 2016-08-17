@@ -10,17 +10,17 @@ print('Loading function')
 
 
 def lambda_handler(event, context):
-    print("Received event: " + json.dumps(event, indent=2))
-
+    # print("Received event: " + json.dumps(event, indent=2))
+    start_time = time.time()
     # Get the object from the event and show its content type
     bucket = event['Records'][0]['s3']['bucket']['name']
     key = urllib.unquote_plus(event['Records'][0]['s3']['object']['key']).encode('utf8')
     size = event['Records'][0]['s3']['object']['size']
     print("Security Video: " + key + " with size: " + str(size) + " uploaded.")
-    print("Saving Data to DynamoDB")
+    # print("Saving Data to DynamoDB")
     object_parts = key.split("/")
     camera_name = object_parts[1]
-    print("Camera Name: " + camera_name)
+    # print("Camera Name: " + camera_name)
 
     dyndb = boto3.resource('dynamodb')
     vid_table = dyndb.Table('security_alarm_videos')
@@ -37,4 +37,4 @@ def lambda_handler(event, context):
     response = vid_table.put_item(Item=save_data)
     response2 = vid_timeline_table.put_item(Item=save_data)
 
-    return size
+    print("Processing for " + key + " completed in: " + str(time.time() - start_time) + " seconds.")
