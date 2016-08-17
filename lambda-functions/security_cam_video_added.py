@@ -24,6 +24,7 @@ def lambda_handler(event, context):
 
     dyndb = boto3.resource('dynamodb')
     vid_table = dyndb.Table('security_alarm_videos')
+    vid_timeline_table = dyndb.Table('security_video_timeline')
     save_data = {'camera_name': camera_name,
                     'video_size': size,
                     'video_name': object_parts[5],
@@ -32,6 +33,8 @@ def lambda_handler(event, context):
                     'event_ts': int(time.time()),
                     'object_key': key
                 }
-    response = vid_table.put_item(Item=save_data
-                                  )
+
+    response = vid_table.put_item(Item=save_data)
+    response2 = vid_timeline_table.put_item(Item=save_data)
+
     return size
