@@ -5,7 +5,6 @@ import urllib
 import boto3
 import time
 
-print('Loading function')
 
 
 
