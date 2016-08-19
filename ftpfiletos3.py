@@ -55,7 +55,7 @@ def parse_upload_file_line(line):
         just_file = path_parts[4]
     # fin
 
-    if just_file.find('.mkv') != -1
+    if just_file.find('.mkv') != -1:
         # Convert mkv to mp4 file
         result = transcodetomp4(file_name)
         if result != file_name:
