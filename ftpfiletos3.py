@@ -55,11 +55,37 @@ def parse_upload_file_line(line):
         just_file = path_parts[4]
     # fin
 
-    s3_object = 'patrolcams/' + path_parts[1] + '/' + date_string + '/' + hour_string + '/' + img_type + '/' + just_file
-    s3.Object('security-alarms', s3_object).put(Body=open(file_name, 'rb'))
-    totaltime = time.time() - start_timing
-    logging.info("S3 Object: {} written to s3 in {} seconds.".format(s3_object, totaltime))
-    sys.exit(0)
+    # Convert mkv to mp4 file
+    result = transcodetomp4(file_name)
+
+    if result != file_name:
+        file_name = result
+        s3_object = 'patrolcams/' + path_parts[1] + '/' + date_string + '/' + hour_string + '/' + img_type + '/' + just_file
+        s3.Object('security-alarms', s3_object).put(Body=open(file_name, 'rb'))
+        totaltime = time.time() - start_timing
+        logging.info("S3 Object: {} written to s3 in {} seconds.".format(s3_object, totaltime))
+        sys.exit(0)
+    else:
+        logging.error("File {} could not be transcoded to mp4.".format(file_name))
+
+def transcodetomp4(file_in):
+
+    import subprocess
+    # @todo
+    # convert the file to mp4 before uploading using
+    # avconv -i ./MDalarm_20160819_105607.mkv -f mp4 -vcodec copy -acodec libfaac -b:a 112k -ac 2 -y ~/outfile.mp4
+
+    file_out = file_in.replace('.mkv', '.mp4')
+
+    convert_command = "avconv -i {} -f mp4 -vcodec copy -acodec libfaac -b:a 112k -ac 2 -y {}".format(file_in, file_out)
+
+    try:
+        subprocess.check_call(convert_command)
+    except subprocess.CalledProcessError:
+        return file_in
+
+    return file_out
+
 
 if __name__ == "__main__":
     main()
