@@ -55,18 +55,22 @@ def parse_upload_file_line(line):
         just_file = path_parts[4]
     # fin
 
-    # Convert mkv to mp4 file
-    result = transcodetomp4(file_name)
+    if just_file.find('.mkv') != -1
+        # Convert mkv to mp4 file
+        result = transcodetomp4(file_name)
+        if result != file_name:
+            file_name = result
+        else:
+            logging.error("File {} could not be transcoded to mp4.".format(file_name))
+            sys.exit(0)
+        #fin
+    #fin
 
-    if result != file_name:
-        file_name = result
-        s3_object = 'patrolcams/' + path_parts[1] + '/' + date_string + '/' + hour_string + '/' + img_type + '/' + just_file
-        s3.Object('security-alarms', s3_object).put(Body=open(file_name, 'rb'))
-        totaltime = time.time() - start_timing
-        logging.info("S3 Object: {} written to s3 in {} seconds.".format(s3_object, totaltime))
-        sys.exit(0)
-    else:
-        logging.error("File {} could not be transcoded to mp4.".format(file_name))
+    s3_object = 'patrolcams/' + path_parts[1] + '/' + date_string + '/' + hour_string + '/' + img_type + '/' + just_file
+    s3.Object('security-alarms', s3_object).put(Body=open(file_name, 'rb'))
+    totaltime = time.time() - start_timing
+    logging.info("S3 Object: {} written to s3 in {} seconds.".format(s3_object, totaltime))
+    sys.exit(0)
 
 def transcodetomp4(file_in):
 
