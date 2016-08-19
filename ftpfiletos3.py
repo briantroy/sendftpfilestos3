@@ -40,6 +40,11 @@ def parse_upload_file_line(line):
     file_name = line_parts[1].strip()
     file_name = file_name.replace('"', '')
     logging.info("File for upload is: {} with file size: {}".format(file_name, line_parts[2]))
+    if line_parts[2].find('Kbyte/sec') != -1:
+        logging.info("Skippking file {} because it is empty.".format(file_name))
+        sys.exit(0)
+    # fin
+
     s3 = boto3.resource('s3')
     # Parse the file name to get the sub-folder and object name.
     path_end = file_name.replace(base_dir, "")
