@@ -60,6 +60,7 @@ def parse_upload_file_line(line):
         result = transcodetomp4(file_name)
         if result != file_name:
             file_name = result
+            just_file = just_file.replace('.mkv', '.mp4')
         else:
             logging.error("File {} could not be transcoded to mp4.".format(file_name))
             sys.exit(0)
