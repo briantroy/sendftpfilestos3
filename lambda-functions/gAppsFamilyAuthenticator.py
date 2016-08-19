@@ -4,13 +4,12 @@ def lambda_handler(event, context):
     import urllib2
     import json
 
-    api_id_security_videos = "xxxxxxxx"
-    personal_user_id = "xxxxxxxxx"
-    allowed_domain = "example.com"
+    allowed_domain = "brianandkelly.ws"
 
     print(event)
     # Get the user info from Google for the recieved token...
     id_token = event['authorizationToken']
+    requestARN = event['methodArn']
     google_token_helper_uri = "https://www.googleapis.com/oauth2/v3/tokeninfo?id_token=" + id_token
 
     result = json.loads(urllib2.urlopen(google_token_helper_uri).read())
@@ -31,7 +30,7 @@ def lambda_handler(event, context):
                                           {
                                             "Action": "execute-api:Invoke",
                                             "Effect": effect,
-                                            "Resource": "arn:aws:execute-api:us-east-1:" + personal_user_id + ":" + api_id_security_videos + "/*/GET/"
+                                            "Resource": "arn:aws:execute-api:us-east-1:*:7k8o0sgjli/securityvideos/*"
                                           }
                                         ]
                       }

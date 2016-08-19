@@ -22,6 +22,10 @@ def parse_upload_file_line(line):
     import time
     from datetime import datetime, date, timedelta
 
+    # @todo
+    # convert the file to mp4 before uploading using
+    # avconv -i ./MDalarm_20160819_105607.mkv -f mp4 -vcodec copy -acodec libfaac -b:a 112k -ac 2 -y ~/outfile.mp4
+
     # Set Up
     base_dir = "/home/securityspy/security-images/alarm-images"
     logging.basicConfig(filename="securitys3uploader.log", level=logging.INFO)
