@@ -84,7 +84,7 @@ def transcodetomp4(file_in):
     convert_command = '/usr/bin/avconv -i "{}" -f mp4 -vcodec copy -acodec libfaac -b:a 112k -ac 2 -y "{}"'.format(file_in, file_out)
 
     try:
-        subprocess.check_call(convert_command)
+        subprocess.check_call(convert_command, shell=True)
     except subprocess.CalledProcessError:
         return file_in
 
