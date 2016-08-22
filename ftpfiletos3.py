@@ -3,6 +3,8 @@ from tail import follow
 
 def main():
     import signal
+    import os
+    import sys
 
     ftp_log_file = "/var/log/vsftpd.log"
 
@@ -10,6 +12,17 @@ def main():
         print("caught interrupt: " + str(signal) + " - restarting processing.")
         t = threading.Thread(target=read_log_file).start()
     # end signal_handler
+
+    pid = str(os.getpid())
+    pidfile = "/tmp/ftpfilestos3.pid"
+
+    if os.path.isfile(pidfile):
+        print("{} already exists, exiting".format(pidfile))
+        sys.exit()
+    with (open(pidfile, 'w')) as pidfilestream:
+        pidfilestream.write(pid)
+        pidfilestream.close()
+    # end with
 
     signal.signal(signal.SIGHUP, signal_handler)
     t = threading.Thread(target=read_log_file).start()
