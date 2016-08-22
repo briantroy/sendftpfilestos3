@@ -29,7 +29,6 @@ def main():
     # end with
 
     signal.signal(signal.SIGHUP, signal_handler)
-    signal.signal(signal.SIGTERM, signal_handler)
 
     t = threading.Thread(target=read_log_file).start()
 
