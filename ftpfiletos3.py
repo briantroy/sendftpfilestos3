@@ -3,23 +3,39 @@ from tail import follow
 
 
 def main():
-    import sys
     import signal
-    ftp_log_file = "/var/log/vsftpd.log"
 
-    with open(ftp_log_file, 'rt') as following:
-        def signal_handler(signal, frame):
-            following.close()
-
-        signal.signal(signal.SIGHUP, signal_handler)
-        signal.pause()
-        following.seek(-64, 2)
+    def read_log_file(fstream):
+        fstream.seek(-64, 2)
         try:
-            for line in follow(following):
+            for line in follow(fstream):
                 if "OK UPLOAD" in line:
-                    t = threading.Thread(target=parse_upload_file_line, args=(line, )).start()
+                    t = threading.Thread(target=parse_upload_file_line, args=(line,)).start()
         except KeyboardInterrupt:
             pass
+
+    # end read_log_file
+
+    def signal_handler(signal, frame):
+        terminate_log_stream()
+        following = initiate_log_stream()
+        read_log_file(following)
+    # end signal_handler
+
+    def terminate_log_stream():
+        following.close()
+    # end
+
+    def initiate_log_stream():
+        ftp_log_file = "/var/log/vsftpd.log"
+        follow_file = open(ftp_log_file, "rt")
+        return follow_file
+    # end
+
+    following = initiate_log_stream()
+    signal.signal(signal.SIGHUP, signal_handler)
+    read_log_file(following)
+
 
 def parse_upload_file_line(line):
     import sys
