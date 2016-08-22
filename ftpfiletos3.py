@@ -10,7 +10,7 @@ def main():
         if signal == 1:
             print("caught interrupt: " + str(signal) + " - restarting processing.")
             t = threading.Thread(target=read_log_file).start()
-        elif signal == 9:
+        elif signal == 15:
             print("caught kill signal... exiting...")
             os.remove("/tmp/ftpfilestos3.pid")
             sys.exit()
@@ -28,6 +28,7 @@ def main():
     # end with
 
     signal.signal(signal.SIGHUP, signal_handler)
+    signal.signal(signal.SIGTERM, signal_handler)
 
     t = threading.Thread(target=read_log_file).start()
 
