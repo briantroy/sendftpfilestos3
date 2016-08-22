@@ -7,7 +7,7 @@ def main():
     ftp_log_file = "/var/log/vsftpd.log"
 
     def signal_handler(signal, frame):
-        print("caught interrupt: " + signal.signal + " - restarting processing.")
+        print("caught interrupt: " + str(signal) + " - restarting processing.")
         read_log_file()
     # end signal_handler
 
