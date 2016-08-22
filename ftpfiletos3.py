@@ -4,9 +4,15 @@ from tail import follow
 
 def main():
     import sys
+    import signal
     ftp_log_file = "/var/log/vsftpd.log"
 
     with open(ftp_log_file, 'rt') as following:
+        def signal_handler(signal, frame):
+            following.close()
+
+        signal.signal(signal.SIGHUP, signal_handler)
+        signal.pause()
         following.seek(-64, 2)
         try:
             for line in follow(following):
