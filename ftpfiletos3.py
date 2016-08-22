@@ -6,12 +6,16 @@ def main():
     import os
     import sys
 
-    ftp_log_file = "/var/log/vsftpd.log"
-
     def signal_handler(signal, frame):
         print("caught interrupt: " + str(signal) + " - restarting processing.")
         t = threading.Thread(target=read_log_file).start()
     # end signal_handler
+
+    def signal_kill_handler(signal, frame):
+        print("caught kill signal... exiting...")
+        os.remove("/tmp/ftpfilestos3.pid")
+        sys.exit()
+    # end signal_kill_handler
 
     pid = str(os.getpid())
     pidfile = "/tmp/ftpfilestos3.pid"
@@ -25,6 +29,8 @@ def main():
     # end with
 
     signal.signal(signal.SIGHUP, signal_handler)
+    signal.signal(signal.SIGKILL, signal_kill_handler)
+
     t = threading.Thread(target=read_log_file).start()
 
 # end Main
