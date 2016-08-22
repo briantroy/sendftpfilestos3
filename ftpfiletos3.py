@@ -35,6 +35,7 @@ def main():
 
 # end Main
 
+
 def read_log_file():
     ftp_log_file = "/var/log/vsftpd.log"
     fstream = open(ftp_log_file, "rt")
