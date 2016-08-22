@@ -8,10 +8,11 @@ def main():
 
     def signal_handler(signal, frame):
         print("caught interrupt: " + str(signal) + " - restarting processing.")
-        read_log_file()
+        t = threading.Thread(target=read_log_file).start()
     # end signal_handler
 
     signal.signal(signal.SIGHUP, signal_handler)
+    t = threading.Thread(target=read_log_file).start()
     read_log_file()
 
 # end Main
