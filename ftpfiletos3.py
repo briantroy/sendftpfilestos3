@@ -6,17 +6,6 @@ def main():
     import os
     import sys
 
-    def signal_handler(signal, frame):
-        print("caught signal: " + str(signal))
-        if signal == 1:
-            print("caught interrupt: " + str(signal) + " - restarting processing.")
-            t = threading.Thread(target=read_log_file).start()
-        elif signal == 15:
-            print("caught kill signal... exiting...")
-            os.remove("/tmp/ftpfilestos3.pid")
-            os._exit(1)
-    # end signal_handler
-
     pid = str(os.getpid())
     pidfile = "/tmp/ftpfilestos3.pid"
 
@@ -28,7 +17,6 @@ def main():
         pidfilestream.close()
     # end with
 
-    signal.signal(signal.SIGHUP, signal_handler)
 
     t = threading.Thread(target=read_log_file).start()
 
