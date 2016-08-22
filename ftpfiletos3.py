@@ -1,40 +1,32 @@
 import threading
 from tail import follow
 
-
 def main():
     import signal
 
-    def read_log_file(fstream):
-        fstream.seek(-64, 2)
-        try:
-            for line in follow(fstream):
-                if "OK UPLOAD" in line:
-                    t = threading.Thread(target=parse_upload_file_line, args=(line,)).start()
-        except KeyboardInterrupt:
-            pass
-
-    # end read_log_file
+    ftp_log_file = "/var/log/vsftpd.log"
 
     def signal_handler(signal, frame):
-        terminate_log_stream()
-        following = initiate_log_stream()
-        read_log_file(following)
+        print("caught interrupt: " + signal.signal + " - restarting processing.")
+        read_log_file()
     # end signal_handler
 
-    def terminate_log_stream():
-        following.close()
-    # end
-
-    def initiate_log_stream():
-        ftp_log_file = "/var/log/vsftpd.log"
-        follow_file = open(ftp_log_file, "rt")
-        return follow_file
-    # end
-
-    following = initiate_log_stream()
     signal.signal(signal.SIGHUP, signal_handler)
-    read_log_file(following)
+    read_log_file()
+
+# end Main
+
+def read_log_file():
+    ftp_log_file = "/var/log/vsftpd.log"
+    fstream = open(ftp_log_file, "rt")
+    fstream.seek(-64, 2)
+    try:
+        for line in follow(fstream):
+            if "OK UPLOAD" in line:
+                t = threading.Thread(target=parse_upload_file_line, args=(line,)).start()
+    except KeyboardInterrupt:
+        pass
+# end read_log_file
 
 
 def parse_upload_file_line(line):
