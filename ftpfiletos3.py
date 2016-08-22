@@ -7,6 +7,7 @@ def main():
     import sys
 
     def signal_handler(signal, frame):
+        print("caught signal: " + str(signal))
         if signal == 1:
             print("caught interrupt: " + str(signal) + " - restarting processing.")
             t = threading.Thread(target=read_log_file).start()
