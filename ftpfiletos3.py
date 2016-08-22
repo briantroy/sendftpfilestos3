@@ -13,7 +13,7 @@ def main():
         elif signal == 15:
             print("caught kill signal... exiting...")
             os.remove("/tmp/ftpfilestos3.pid")
-            sys.exit()
+            os._exit(1)
     # end signal_handler
 
     pid = str(os.getpid())
