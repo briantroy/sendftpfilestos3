@@ -24,6 +24,7 @@ def main():
 
 
 def read_log_file():
+    import os
     ftp_log_file = "/var/log/vsftpd.log"
     while not os.path.exists(ftp_log_file):
         time.sleep(1)
