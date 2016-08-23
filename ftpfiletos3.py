@@ -28,7 +28,7 @@ def read_log_file():
     ftp_log_file = "/var/log/vsftpd.log"
     filesize = os.path.getsize(ftp_log_file)
     print(filesize)
-    while (not os.path.exists(ftp_log_file)) and (int(filesize) > 64):
+    while (not os.path.exists(ftp_log_file)) & (int(filesize) > 64):
         time.sleep(1)
         filesize = os.path.getsize(ftp_log_file)
     # end while
