@@ -25,12 +25,15 @@ def main():
 
 def read_log_file():
     import os
+    import time
     ftp_log_file = "/var/log/vsftpd.log"
     filesize = os.path.getsize(ftp_log_file)
     print(filesize)
-    while ((not os.path.exists(ftp_log_file)) and (int(filesize) > 64)):
-        time.sleep(1)
-        filesize = os.path.getsize(ftp_log_file)
+    while not os.path.exists(ftp_log_file):
+        while not filesize < 64:
+            time.sleep(1)
+            filesize = os.path.getsize(ftp_log_file)
+        # End inner while
     # end while
 
     fstream = open(ftp_log_file, "rt")
