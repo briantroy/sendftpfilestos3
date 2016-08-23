@@ -25,6 +25,10 @@ def main():
 
 def read_log_file():
     ftp_log_file = "/var/log/vsftpd.log"
+    while not os.path.exists(ftp_log_file):
+        time.sleep(1)
+    # end while
+
     fstream = open(ftp_log_file, "rt")
     fstream.seek(-64, 2)
     try:
