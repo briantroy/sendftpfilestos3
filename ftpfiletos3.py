@@ -54,7 +54,7 @@ def parse_upload_file_line(line):
 
     # Set Up
     base_dir = "/home/securityspy/security-images/alarm-images"
-    logging.basicConfig(filename="/home/brian.roy/brian-extra/sendftpfilestos3/securitys3uploader.log", level=logging.INFO)
+    logging.basicConfig(filename="/var/log/securitys3uploader.log", level=logging.INFO)
 
     start_timing = time.time()
 
