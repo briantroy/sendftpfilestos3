@@ -33,6 +33,7 @@ def read_log_file():
         while not filesize < 64:
             time.sleep(1)
             filesize = os.path.getsize(ftp_log_file)
+            print(filesize)
         # End inner while
     # end while
 
