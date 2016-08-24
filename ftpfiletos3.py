@@ -60,10 +60,13 @@ def read_log_file(logger):
     logger.info("STARTUP: Beginning trace of VSFTPD log file.")
     fstream = open(ftp_log_file, "rt")
     fstream.seek(-64, 2)
+    line_count = 1
     try:
         for line in follow(fstream):
             if "OK UPLOAD" in line:
-                t = threading.Thread(name='line-handler', target=parse_upload_file_line, args=(line, logger,)).start()
+                thread_name = 'line-handler-' + str(line_count)
+                t = threading.Thread(name=thread_name, target=parse_upload_file_line, args=(line, logger,)).start()
+                line_count += 1
     except KeyboardInterrupt:
         pass
 # end read_log_file
