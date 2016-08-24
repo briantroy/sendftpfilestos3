@@ -21,7 +21,7 @@ def main():
     # Add the log message handler to the logger
     handler = logging.handlers.RotatingFileHandler(
         app_log_file, maxBytes=5242880, backupCount=4)
-    formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(thread)d - %(message)s')
+    formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(thread)d - %(threadName)s - %(message)s')
     handler.setFormatter(formatter)
 
     app_logger.addHandler(handler)
