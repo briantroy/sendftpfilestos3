@@ -16,7 +16,7 @@ def main():
     app_log_file = "/var/log/securitys3uploader.log"
 
     app_logger = logging.getLogger('AppLogger')
-    app_logger.setLevel(logging.NOTSET)
+    app_logger.setLevel(logging.DEBUG)
 
     # Add the log message handler to the logger
     handler = logging.handlers.RotatingFileHandler(
