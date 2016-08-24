@@ -78,7 +78,7 @@ def parse_upload_file_line(line):
 
     start_timing = time.time()
 
-    start_date = datetime.now()
+    start_date = datetime.datetime.now()
     date_string = start_date.strftime('%Y') + "-" + start_date.strftime("%m") + "-" + start_date.strftime("%d")
     hour_string = "Hour-" + str(start_date.hour)
 
