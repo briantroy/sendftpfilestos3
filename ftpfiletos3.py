@@ -16,12 +16,12 @@ def main():
     app_log_file = "/var/log/securitys3uploader.log"
 
     app_logger = logging.getLogger('AppLogger')
-    app_logger.setLevel(logging.INFO)
+    app_logger.setLevel(logging.NOTSET)
 
     # Add the log message handler to the logger
     handler = logging.handlers.RotatingFileHandler(
         app_log_file, maxBytes=5242880, backupCount=4)
-    formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
+    formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(thread)d - %(message)s')
     handler.setFormatter(formatter)
 
     app_logger.addHandler(handler)
@@ -123,6 +123,7 @@ def parse_upload_file_line(line, logger):
     totaltime = time.time() - start_timing
     logger.info("S3 Object: {} written to s3 in {} seconds.".format(s3_object, totaltime))
     sys.exit(0)
+# end parse_upload_file_line
 
 
 def transcodetomp4(file_in):
