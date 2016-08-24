@@ -1,22 +1,41 @@
 import threading
 from tail import follow
+import logging
+import logging.handlers
+import os
+import sys
+import time
+
 
 def main():
-    import signal
-    import os
-    import sys
 
     pid = str(os.getpid())
     pidfile = "/tmp/ftpfilestos3.pid"
 
+    # set up logger
+    app_log_file = "/var/log/securitys3uploader.log"
+
+    app_logger = logging.getLogger('AppLogger')
+    app_logger.setLevel(logging.INFO)
+
+    # Add the log message handler to the logger
+    handler = logging.handlers.RotatingFileHandler(
+        app_log_file, maxBytes=5242880, backupCount=4)
+    formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
+    handler.setFormatter(formatter)
+
+    app_logger.addHandler(handler)
+
     if os.path.isfile(pidfile):
         print("{} already exists, exiting".format(pidfile))
+        app_logger.info("STARTUP: PID file exists... exiting...")
         sys.exit()
     with (open(pidfile, 'w')) as pidfilestream:
         pidfilestream.write(pid)
         pidfilestream.close()
     # end with
 
+    app_logger.info("STARTUP: Starting now - getting VSFTPD log file...")
 
     t = threading.Thread(target=read_log_file).start()
 
@@ -24,21 +43,21 @@ def main():
 
 
 def read_log_file():
-    import os
-    import time
+
     ftp_log_file = "/var/log/vsftpd.log"
-    filesize = os.path.getsize(ftp_log_file)
     while not os.path.exists(ftp_log_file):
+        logging.info("VSFTPD log file doesn't exist yet... waiting...")
         time.sleep(1)
     # end while
     filesize = os.path.getsize(ftp_log_file)
-    print(filesize)
     while filesize <= 64:
+        logging.info("VSFTPD log file is less than 64 bytes... waiting...")
         time.sleep(1)
         filesize = os.path.getsize(ftp_log_file)
         print(filesize)
     # end while
 
+    logging.info("STARTUP: Beginning trace of VSFTPD log file.")
     fstream = open(ftp_log_file, "rt")
     fstream.seek(-64, 2)
     try:
@@ -51,19 +70,11 @@ def read_log_file():
 
 
 def parse_upload_file_line(line):
-    import sys
     import boto3
-    import logging
-    import time
-    from datetime import datetime, date, timedelta
-
-    # @todo
-    # convert the file to mp4 before uploading using
-    # avconv -i ./MDalarm_20160819_105607.mkv -f mp4 -vcodec copy -acodec libfaac -b:a 112k -ac 2 -y ~/outfile.mp4
+    import datetime
 
     # Set Up
     base_dir = "/home/securityspy/security-images/alarm-images"
-    logging.basicConfig(filename="/var/log/securitys3uploader.log", level=logging.INFO)
 
     start_timing = time.time()
 
@@ -104,8 +115,8 @@ def parse_upload_file_line(line):
         else:
             logging.error("File {} could not be transcoded to mp4.".format(file_name))
             sys.exit(0)
-        #fin
-    #fin
+        # fin
+    # fin
 
     s3_object = 'patrolcams/' + path_parts[1] + '/' + date_string + '/' + hour_string + '/' + img_type + '/' + just_file
     s3.Object('security-alarms', s3_object).put(Body=open(file_name, 'rb'))
@@ -113,16 +124,15 @@ def parse_upload_file_line(line):
     logging.info("S3 Object: {} written to s3 in {} seconds.".format(s3_object, totaltime))
     sys.exit(0)
 
+
 def transcodetomp4(file_in):
 
     import subprocess
-    # @todo
-    # convert the file to mp4 before uploading using
-    # avconv -i ./MDalarm_20160819_105607.mkv -f mp4 -vcodec copy -acodec libfaac -b:a 112k -ac 2 -y ~/outfile.mp4
 
     file_out = file_in.replace('.mkv', '.mp4')
 
-    convert_command = '/usr/bin/avconv -i "{}" -f mp4 -vcodec copy -acodec libfaac -b:a 112k -ac 2 -y "{}"'.format(file_in, file_out)
+    convert_command = '/usr/bin/avconv -i "{}" -f mp4 -vcodec copy -acodec libfaac -b:a 112k -ac 2 -y "{}"'\
+        .format(file_in, file_out)
 
     try:
         subprocess.check_call(convert_command, shell=True)
