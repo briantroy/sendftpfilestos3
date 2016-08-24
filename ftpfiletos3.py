@@ -37,7 +37,7 @@ def main():
 
     app_logger.info("STARTUP: Starting now - getting VSFTPD log file...")
 
-    t = threading.Thread(target=read_log_file, args=(app_logger,)).start()
+    t = threading.Thread(name='log-reader', target=read_log_file, args=(app_logger,)).start()
 
 # end Main
 
@@ -63,7 +63,7 @@ def read_log_file(logger):
     try:
         for line in follow(fstream):
             if "OK UPLOAD" in line:
-                t = threading.Thread(target=parse_upload_file_line, args=(line, logger,)).start()
+                t = threading.Thread(name='line-handler', target=parse_upload_file_line, args=(line, logger,)).start()
     except KeyboardInterrupt:
         pass
 # end read_log_file
