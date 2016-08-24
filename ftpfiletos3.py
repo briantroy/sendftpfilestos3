@@ -67,9 +67,9 @@ def read_log_file(logger):
                 thread_name = 'line-handler-' + str(line_count)
                 t = threading.Thread(name=thread_name, target=parse_upload_file_line, args=(line, logger,)).start()
                 line_count += 1
-            # fin
-            if line_count % 100 == 0:
-                logger.info("THREAD-STATUS: There are {} currently active threads.".format(threading.activeCount()))
+                if line_count % 100 == 0:
+                    logger.info("THREAD-STATUS: There are {} currently active threads.".format(threading.activeCount()))
+                # fin
             # fin
 
     except KeyboardInterrupt:
