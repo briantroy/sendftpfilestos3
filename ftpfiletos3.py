@@ -37,39 +37,39 @@ def main():
 
     app_logger.info("STARTUP: Starting now - getting VSFTPD log file...")
 
-    t = threading.Thread(target=read_log_file).start()
+    t = threading.Thread(target=read_log_file, args=(app_logger,)).start()
 
 # end Main
 
 
-def read_log_file():
+def read_log_file(logger):
 
     ftp_log_file = "/var/log/vsftpd.log"
     while not os.path.exists(ftp_log_file):
-        logging.info("VSFTPD log file doesn't exist yet... waiting...")
+        logger.info("VSFTPD log file doesn't exist yet... waiting...")
         time.sleep(1)
     # end while
     filesize = os.path.getsize(ftp_log_file)
     while filesize <= 64:
-        logging.info("VSFTPD log file is less than 64 bytes... waiting...")
+        logger.info("VSFTPD log file is less than 64 bytes... waiting...")
         time.sleep(1)
         filesize = os.path.getsize(ftp_log_file)
         print(filesize)
     # end while
 
-    logging.info("STARTUP: Beginning trace of VSFTPD log file.")
+    logger.info("STARTUP: Beginning trace of VSFTPD log file.")
     fstream = open(ftp_log_file, "rt")
     fstream.seek(-64, 2)
     try:
         for line in follow(fstream):
             if "OK UPLOAD" in line:
-                t = threading.Thread(target=parse_upload_file_line, args=(line,)).start()
+                t = threading.Thread(target=parse_upload_file_line, args=(line, logger,)).start()
     except KeyboardInterrupt:
         pass
 # end read_log_file
 
 
-def parse_upload_file_line(line):
+def parse_upload_file_line(line, logger):
     import boto3
     import datetime
 
@@ -85,9 +85,9 @@ def parse_upload_file_line(line):
     line_parts = line.split(",")
     file_name = line_parts[1].strip()
     file_name = file_name.replace('"', '')
-    logging.info("File for upload is: {} with file size: {}".format(file_name, line_parts[2]))
+    logger.info("File for upload is: {} with file size: {}".format(file_name, line_parts[2]))
     if line_parts[2].find('Kbyte/sec') != -1:
-        logging.info("Skippking file {} because it is empty.".format(file_name))
+        logger.info("Skippking file {} because it is empty.".format(file_name))
         sys.exit(0)
     # fin
 
@@ -113,7 +113,7 @@ def parse_upload_file_line(line):
             file_name = result
             just_file = just_file.replace('.mkv', '.mp4')
         else:
-            logging.error("File {} could not be transcoded to mp4.".format(file_name))
+            logger.error("File {} could not be transcoded to mp4.".format(file_name))
             sys.exit(0)
         # fin
     # fin
@@ -121,7 +121,7 @@ def parse_upload_file_line(line):
     s3_object = 'patrolcams/' + path_parts[1] + '/' + date_string + '/' + hour_string + '/' + img_type + '/' + just_file
     s3.Object('security-alarms', s3_object).put(Body=open(file_name, 'rb'))
     totaltime = time.time() - start_timing
-    logging.info("S3 Object: {} written to s3 in {} seconds.".format(s3_object, totaltime))
+    logger.info("S3 Object: {} written to s3 in {} seconds.".format(s3_object, totaltime))
     sys.exit(0)
 
 
