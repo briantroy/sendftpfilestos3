@@ -1,8 +1,9 @@
 #!/bin/bash
-if [ -e /tmp/ftpfilestos3.pid ]
+pidfile="/tmp/ftpfiletos3.pid"
+if [ -e "$pidfile" ]
 then
-    /bin/kill $(cat /tmp/ftpfilestos3.pid)
-    /bin/rm -Rf /tmp/ftpfilestos3.pid
+    /bin/kill $(cat "$pidfile")
+    /bin/rm -Rf "$pidfile" 
 fi
 sleep 2
 /usr/bin/python /home/brian.roy/brian-extra/sendftpfilestos3/ftpfiletos3.py vsftpd-config.json >> /dev/null &
