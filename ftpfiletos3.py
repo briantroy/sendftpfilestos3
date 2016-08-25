@@ -25,18 +25,18 @@ def main():
     # fin
 
     pid = str(os.getpid())
-    pidfile = "/tmp/ftpfilestos3.pid"
+    pidfile = get_config_item(app_config, 'app_pid_file')
 
     # set up logger
-    app_log_file = "/var/log/securitys3uploader.log"
+    app_log_file = get_config_item(app_config, 'app_log_file.file')
 
     app_logger = logging.getLogger('AppLogger')
     app_logger.setLevel(logging.DEBUG)
 
     # Add the log message handler to the logger
     handler = logging.handlers.RotatingFileHandler(
-        app_log_file, maxBytes=5242880, backupCount=4)
-    formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(thread)d - %(threadName)s - %(message)s')
+        app_log_file, maxBytes=get_config_item(app_config, 'app_log_file.rotate_at_in_bytes'), backupCount=4)
+    formatter = logging.Formatter(get_config_item(app_config, 'app_log_file.log_format'))
     handler.setFormatter(formatter)
 
     app_logger.addHandler(handler)
@@ -52,14 +52,14 @@ def main():
 
     app_logger.info("STARTUP: Starting now - getting VSFTPD log file...")
 
-    t = threading.Thread(name='log-reader', target=read_log_file, args=(app_logger,)).start()
+    t = threading.Thread(name='log-reader', target=read_log_file, args=(app_logger, app_config, )).start()
 
 # end Main
 
 
-def read_log_file(logger):
+def read_log_file(logger, app_config):
 
-    ftp_log_file = "/var/log/vsftpd.log"
+    ftp_log_file = get_config_item(app_config, 'log_file_to_follow.file')
     while not os.path.exists(ftp_log_file):
         logger.info("VSFTPD log file doesn't exist yet... waiting...")
         time.sleep(1)
@@ -77,10 +77,12 @@ def read_log_file(logger):
     fstream.seek(-64, 2)
     line_count = 1
     try:
+        line_trigger = get_config_item(app_config, 'log_file_to_follow.line_identifier')
         for line in follow(fstream):
-            if "OK UPLOAD" in line:
+            if line_trigger in line:
                 thread_name = 'line-handler-' + str(line_count)
-                t = threading.Thread(name=thread_name, target=parse_upload_file_line, args=(line, logger,)).start()
+                t = threading.Thread(name=thread_name, target=parse_upload_file_line,
+                                     args=(line, logger, app_config, )).start()
                 line_count += 1
                 if line_count % 10 == 0:
                     logger.info("THREAD-STATUS: There are {} currently active threads.".format(threading.activeCount()))
@@ -92,12 +94,11 @@ def read_log_file(logger):
 # end read_log_file
 
 
-def parse_upload_file_line(line, logger):
-    import boto3
+def parse_upload_file_line(line, logger, app_config):
     import datetime
 
     # Set Up
-    base_dir = "/home/securityspy/security-images/alarm-images"
+    base_dir = get_config_item(app_config, 'ftp_base_dir')
 
     start_timing = time.time()
 
@@ -141,14 +142,23 @@ def parse_upload_file_line(line, logger):
     # fin
     camera_name = path_parts[1]
 
+    push_file_to_s3(logger, app_config, camera_name, date_string, hour_string, img_type, just_file,
+                    file_name, start_timing)
+    sys.exit(0)
+# end parse_upload_file_line
+
+
+def push_file_to_s3(logger, app_config, camera, date_part, hour_part, img_type, s3_file_name, local_file, start_timing):
+    import boto3
     s3 = boto3.resource('s3')
     logging.getLogger('boto3').addHandler(logger)
-    s3_object = 'patrolcams/' + camera_name + '/' + date_string + '/' + hour_string + '/' + img_type + '/' + just_file
-    s3.Object('security-alarms', s3_object).put(Body=open(file_name, 'rb'))
+    s3_object = get_config_item(app_config, 's3_info.object_base') + \
+                camera + '/' + date_part + '/' + hour_part + '/' + img_type + '/' + s3_file_name
+    s3.Object(get_config_item(app_config, 's3_info.bucket_name'), s3_object).put(Body=open(local_file, 'rb'))
     totaltime = time.time() - start_timing
     logger.info("S3 Object: {} written to s3 in {} seconds.".format(s3_object, totaltime))
     sys.exit(0)
-# end parse_upload_file_line
+# end push_file_to_s3
 
 
 def transcodetomp4(file_in):
@@ -182,6 +192,16 @@ def config_reader(config_file):
 
 # end config_reader
 
+
+def get_config_item(app_config, item):
+    item_path = item.split('.')
+    this_config = app_config
+    for path_part in item_path:
+        this_config = this_config[path_part]
+    # end For
+
+    return this_config
+# end get_config_item
 
 if __name__ == "__main__":
     main()
