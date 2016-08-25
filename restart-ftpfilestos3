@@ -1,5 +1,6 @@
 #!/bin/bash
 if [ -e /tmp/ftpfilestos3.pid ]
+then
     /bin/kill $(cat /tmp/ftpfilestos3.pid)
     /bin/rm -Rf /tmp/ftpfilestos3.pid
 fi
