@@ -1,19 +1,20 @@
+// You will need to copy this file, put in the correct values and remove all commments before use.
 {
   "log-file-to-follow": {
-    "file":"/var/log/vsftpd.log",
-    "line_identifier": "OK UPLOAD"
+    "file":"log file to follow - in this case your vsftpd log file",
+    "line_identifier": "String to identify an uploaded file in the log - usually OK UPLOAD"
   },
   "app_log_file": {
-    "file": "/var/log/securitys3uploader.log",
-    "rotate_at_in_bytes": 5242880,
-    "number_of_old_logs_to_keep": 4,
-    "log_format": "%(asctime)s - %(levelname)s - %(thread)d - %(threadName)s - %(message)s"
+    "file": "Where this app logs.",
+    "rotate_at_in_bytes": 5242880, // The number of bytes at which the file will be roated.
+    "number_of_old_logs_to_keep": 4, // The number of old log files to keep post rotation
+    "log_format": "%(asctime)s - %(levelname)s - %(thread)d - %(threadName)s - %(message)s" // The python logging log file format.
   },
-  "app_pid_file": "/tmp/ftpfiletos3.pid",
-  "ftp_base_dir": "/home/securityspy/security-images/alarm-images",
+  "app_pid_file": "full path to pid file", // Where the PID file is written.
+  "ftp_base_dir": "FTP files base path", // Base directory where vsftpd stores uploaded files.
   "s3_info": {
-    "bucket_name": "security-alarms",
-    "object_base": "patrolcams"
+    "bucket_name": "my bucket name", // S3 Bucket Name
+    "object_base": "mycams" // Any prefix on the the object - usuall sub-folders of the bucket.
   }
 
 }

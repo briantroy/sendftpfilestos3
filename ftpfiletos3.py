@@ -5,9 +5,24 @@ import logging.handlers
 import os
 import sys
 import time
+import json
 
 
 def main():
+
+    # Locate and init config.
+    default_config = "config.json"
+    if len(sys.argv) == 2:
+        # config from command line
+        app_config = config_reader(sys.argv[1])
+    else:
+        # config shoudl be in default
+        app_config = config_reader(default_config)
+    # fin
+    if not app_config:
+        print("Exiting due to invalid config file.")
+        sys.exit()
+    # fin
 
     pid = str(os.getpid())
     pidfile = "/tmp/ftpfilestos3.pid"
@@ -151,6 +166,21 @@ def transcodetomp4(file_in):
         return file_in
 
     return file_out
+# end transcodetomp4
+
+
+def config_reader(config_file):
+    if os.path.exists(config_file):
+        with open(config_file, 'r') as cfile:
+            app_config = json.load(cfile)
+        # end with
+        return app_config
+    else:
+        print("The config file: {} does not exist, please try again.".format(config_file))
+        return False
+    # fin
+
+# end config_reader
 
 
 if __name__ == "__main__":
