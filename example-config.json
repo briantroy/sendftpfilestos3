@@ -1,0 +1,19 @@
+{
+  "log-file-to-follow": {
+    "file":"/var/log/vsftpd.log",
+    "line_identifier": "OK UPLOAD"
+  },
+  "app_log_file": {
+    "file": "/var/log/securitys3uploader.log",
+    "rotate_at_in_bytes": 5242880,
+    "number_of_old_logs_to_keep": 4,
+    "log_format": "%(asctime)s - %(levelname)s - %(thread)d - %(threadName)s - %(message)s"
+  },
+  "app_pid_file": "/tmp/ftpfiletos3.pid",
+  "ftp_base_dir": "/home/securityspy/security-images/alarm-images",
+  "s3_info": {
+    "bucket_name": "security-alarms",
+    "object_base": "patrolcams"
+  }
+
+}

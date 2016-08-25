@@ -99,7 +99,6 @@ def parse_upload_file_line(line, logger):
         sys.exit(0)
     # fin
 
-    s3 = boto3.resource('s3')
     # Parse the file name to get the sub-folder and object name.
     path_end = file_name.replace(base_dir, "")
     path_parts = path_end.split('/')
@@ -125,8 +124,11 @@ def parse_upload_file_line(line, logger):
             sys.exit(0)
         # fin
     # fin
+    camera_name = path_parts[1]
 
-    s3_object = 'patrolcams/' + path_parts[1] + '/' + date_string + '/' + hour_string + '/' + img_type + '/' + just_file
+    s3 = boto3.resource('s3')
+    logging.getLogger('boto3').addHandler(logger)
+    s3_object = 'patrolcams/' + camera_name + '/' + date_string + '/' + hour_string + '/' + img_type + '/' + just_file
     s3.Object('security-alarms', s3_object).put(Body=open(file_name, 'rb'))
     totaltime = time.time() - start_timing
     logger.info("S3 Object: {} written to s3 in {} seconds.".format(s3_object, totaltime))
