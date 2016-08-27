@@ -38,7 +38,7 @@ def lambda_handler(event, context):
             },
             Outputs=[{
                 'Key': small_vid_key,
-                'PresetId': '1351620000001-000040'
+                'PresetId': '1351620000001-000061'
             }]
         )
 
