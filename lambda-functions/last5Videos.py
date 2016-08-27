@@ -53,10 +53,10 @@ def lambda_handler(event, context):
         )
     # Fin
 
-    return generate_signed_uri_for_resposne(response)
+    return generate_signed_uri_for_response(response)
 
 
-def generate_signed_uri_for_resposne(data):
+def generate_signed_uri_for_response(data):
 
     s3 = boto3.client('s3')
     bucket = "security-alarms"
@@ -71,6 +71,16 @@ def generate_signed_uri_for_resposne(data):
             }
         )
         item['uri'] = url
+        if 'object_key_small' in item:
+            url = s3.generate_presigned_url(
+                ClientMethod='get_object',
+                Params={
+                    'Bucket': bucket,
+                    'Key': item['object_key_small']
+                }
+            )
+            item['uri_small_video'] = url
+        # fin
         new_items.append(item)
 
     # end for
