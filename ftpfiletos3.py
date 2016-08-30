@@ -122,12 +122,13 @@ def check_config_file():
 # end check_config_file
 
 
-def read_log_file(logger, app_config):
+def read_log_file(logger, app_config, is_test=False):
     """ Function reads the log file specified in the configuration for new lines
      containing the appropriate trigger string.
 
     :param logger: The logging handler to use.
     :param app_config: The configuration for the application.
+    :param is_test: Default False - set to true to avoid calling line parser function while testing.
     :return:
     """
 
@@ -135,13 +136,16 @@ def read_log_file(logger, app_config):
     while not os.path.exists(ftp_log_file):
         logger.info("VSFTPD log file doesn't exist yet... waiting...")
         time.sleep(1)
+        if is_test:
+            return True
     # end while
     filesize = os.path.getsize(ftp_log_file)
     while filesize <= 64:
         logger.info("VSFTPD log file is less than 64 bytes... waiting...")
         time.sleep(1)
         filesize = os.path.getsize(ftp_log_file)
-        print filesize
+        if is_test:
+            return True
     # end while
 
     logger.info("STARTUP: Beginning trace of VSFTPD log file.")
@@ -153,13 +157,16 @@ def read_log_file(logger, app_config):
         for line in follow(fstream):
             if line_trigger in line:
                 thread_name = 'line-handler-' + str(line_count)
-                threading.Thread(name=thread_name, target=parse_upload_file_line,
-                                 args=(line, logger, app_config, )).start()
+                if not is_test:
+                    threading.Thread(name=thread_name, target=parse_upload_file_line,
+                                     args=(line, logger, app_config, )).start()
                 line_count += 1
                 if line_count % 10 == 0:
                     logger.info("THREAD-STATUS: There are {} currently active threads."
                                 .format(threading.activeCount()))
                 # fin
+                if is_test:
+                    return True
             # fin
 
     except KeyboardInterrupt:

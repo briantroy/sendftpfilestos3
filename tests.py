@@ -86,4 +86,35 @@ class TestFtpFileToS3(unittest.TestCase):
         self.assertTrue(logger)
     # end test_good_logger_setup
 
+    def test_log_file_reader(self):
+        sys.argv[1] = 'testdata/valid_config.json'
+        this_config = ftpfiletos3.check_config_file()
+        this_config['app_log_file']['file'] = 'testdata/test_log_file.log'
+        this_config['log_file_to_follow']['file'] = 'testdata/test_log_file.log'
+        logger = ftpfiletos3.logger_setup(this_config)
+        runit = ftpfiletos3.read_log_file(logger, this_config, True)
+        self.assertTrue(runit)
+    # end test_log_file_reader
+
+    def test_log_file_reader_no_file(self):
+        sys.argv[1] = 'testdata/valid_config.json'
+        this_config = ftpfiletos3.check_config_file()
+        this_config['app_log_file']['file'] = 'testdata/test_log_file.log'
+        this_config['log_file_to_follow']['file'] = 'testdata/foo.log'
+        logger = ftpfiletos3.logger_setup(this_config)
+        runit = ftpfiletos3.read_log_file(logger, this_config, True)
+        self.assertTrue(runit)
+    # end test_log_file_reader_no_file
+
+    def test_log_file_reader_small_file(self):
+        sys.argv[1] = 'testdata/valid_config.json'
+        this_config = ftpfiletos3.check_config_file()
+        this_config['app_log_file']['file'] = 'testdata/test_log_file.log'
+        this_config['log_file_to_follow']['file'] = 'testdata/small_log.log'
+        logger = ftpfiletos3.logger_setup(this_config)
+        runit = ftpfiletos3.read_log_file(logger, this_config, True)
+        self.assertTrue(runit)
+    # end test_log_file_reader_small_file
+
+
 # end class

@@ -1,7 +1,7 @@
 {
   "log_file_to_follow": {
     "file":"/var/log/vsftpd.log",
-    "line_identifier": "OK UPLOAD"
+    "line_identifier": "STARTUP"
   },
   "app_log_file": {
     "file": "/var/log/securitys3uploader.log",
