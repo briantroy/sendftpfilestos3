@@ -1,2 +1,3 @@
 vsftpd-config.json
 *.pyc
+static_code_analysis/*.html
