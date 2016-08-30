@@ -1,18 +1,16 @@
+""" Lambda function to handle adding new video files to s3 """
 from __future__ import print_function
 
-import json
 import urllib
-import boto3
 import time
-
-
+import boto3
 
 
 def lambda_handler(event, context):
+    """ Lambda Handler """
     # print("Received event: " + json.dumps(event, indent=2))
     start_time = time.time()
     # Get the object from the event and show its content type
-    bucket = event['Records'][0]['s3']['bucket']['name']
     key = urllib.unquote_plus(event['Records'][0]['s3']['object']['key']).encode('utf8')
     size = event['Records'][0]['s3']['object']['size']
     print("Security Video: " + key + " with size: " + str(size) + " uploaded.")
@@ -46,19 +44,20 @@ def lambda_handler(event, context):
         vid_table = dyndb.Table('security_alarm_videos')
         vid_timeline_table = dyndb.Table('security_video_timeline')
         save_data = {'camera_name': camera_name,
-                        'video_size': size,
-                        'video_name': object_parts[5],
-                        'capture_date': object_parts[2],
-                        'capture_hour': object_parts[3],
-                        'event_ts': int(time.time()),
-                        'object_key': key,
-                        'object_key_small': small_vid_key
+                     'video_size': size,
+                     'video_name': object_parts[5],
+                     'capture_date': object_parts[2],
+                     'capture_hour': object_parts[3],
+                     'event_ts': int(time.time()),
+                     'object_key': key,
+                     'object_key_small': small_vid_key
                     }
 
-        response = vid_table.put_item(Item=save_data)
-        response2 = vid_timeline_table.put_item(Item=save_data)
+        vid_table.put_item(Item=save_data)
+        vid_timeline_table.put_item(Item=save_data)
 
-        print("Processing for " + key + " completed in: " + str(time.time() - start_time) + " seconds.")
+        print("Processing for " + key + " completed in: " + str(time.time() - start_time) +
+              " seconds.")
     else:
         print("Processing for " + key + " skipped - this is our transcoded file.")
     # fin

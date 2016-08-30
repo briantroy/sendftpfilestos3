@@ -1,16 +1,16 @@
+""" API endpoint handler to load videos """
 from __future__ import print_function
 
-import boto3
 import time
-from boto3.dynamodb.conditions import Key, Attr
+import boto3
+from boto3.dynamodb.conditions import Key
 
 
 def lambda_handler(event, context):
+    """ Lambda Handler """
     print(event)
 
     dyndb = boto3.resource('dynamodb')
-    response = {"result": "Invalid Request"}
-    good_request = False
 
     if 'camera' in event['params']['path']:
         camname = event['params']['path']['camera']
@@ -22,7 +22,6 @@ def lambda_handler(event, context):
             ScanIndexForward=False,
             Limit=5,
         )
-        good_reqeust = True
     else:
 
         # Must be a video timeline request
@@ -53,17 +52,22 @@ def lambda_handler(event, context):
         )
     # Fin
 
-    return generate_signed_uri_for_response(response)
+    return generate_signed_uri(response)
 
 
-def generate_signed_uri_for_response(data):
+def generate_signed_uri(data):
+    """ Generates signed URIs for the videos - allowing app to load them.
 
-    s3 = boto3.client('s3')
+    :param data: List of videos for which signed URIs will be generated.
+    :return: The updated data with signed URIs
+    """
+
+    s3_client = boto3.client('s3')
     bucket = "security-alarms"
     new_items = []
 
     for item in data['Items']:
-        url = s3.generate_presigned_url(
+        url = s3_client.generate_presigned_url(
             ClientMethod='get_object',
             Params={
                 'Bucket': bucket,
@@ -72,7 +76,7 @@ def generate_signed_uri_for_response(data):
         )
         item['uri'] = url
         if 'object_key_small' in item:
-            url = s3.generate_presigned_url(
+            url = s3_client.generate_presigned_url(
                 ClientMethod='get_object',
                 Params={
                     'Bucket': bucket,

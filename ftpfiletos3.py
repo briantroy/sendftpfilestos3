@@ -1,15 +1,26 @@
+""" Module reads a specified log file and uploads files found in that log file to s3.
+    Designed for use with vsftpd logs.
+"""
 import threading
-from tail import follow
-import logging
-import logging.handlers
 import os
 import sys
 import time
 import json
+import logging
+import logging.handlers
+from tail import follow
 
 
 def main():
+    """ Main function - runs the s3 uploader
 
+    Keyword arguments:
+    Takes one command line argument (optionally) - the configuration json file.
+    Defaults to config.json in the current directory (note: not the install dir).
+
+
+    :return:
+    """
     # Locate and init config.
     default_config = "config.json"
     if len(sys.argv) == 2:
@@ -20,7 +31,7 @@ def main():
         app_config = config_reader(default_config)
     # fin
     if not app_config:
-        print("Exiting due to invalid config file.")
+        print "Exiting due to invalid config file."
         sys.exit()
     # fin
 
@@ -35,14 +46,15 @@ def main():
 
     # Add the log message handler to the logger
     handler = logging.handlers.RotatingFileHandler(
-        app_log_file, maxBytes=get_config_item(app_config, 'app_log_file.rotate_at_in_bytes'), backupCount=4)
+        app_log_file, maxBytes=get_config_item(app_config, 'app_log_file.rotate_at_in_bytes'),
+        backupCount=4)
     formatter = logging.Formatter(get_config_item(app_config, 'app_log_file.log_format'))
     handler.setFormatter(formatter)
 
     app_logger.addHandler(handler)
 
     if os.path.isfile(pidfile):
-        print("{} already exists, exiting".format(pidfile))
+        print "{} already exists, exiting".format(pidfile)
         app_logger.info("STARTUP: PID file exists... exiting...")
         sys.exit()
     with (open(pidfile, 'w')) as pidfilestream:
@@ -52,12 +64,20 @@ def main():
 
     app_logger.info("STARTUP: Starting now - getting VSFTPD log file...")
 
-    t = threading.Thread(name='log-reader', target=read_log_file, args=(app_logger, app_config, )).start()
+    threading.Thread(name='log-reader', target=read_log_file,
+                     args=(app_logger, app_config, )).start()
 
 # end Main
 
 
 def read_log_file(logger, app_config):
+    """ Function reads the log file specified in the configuration for new lines
+     containing the appropriate trigger string.
+
+    :param logger: The logging handler to use.
+    :param app_config: The configuration for the application.
+    :return:
+    """
 
     ftp_log_file = get_config_item(app_config, 'log_file_to_follow.file')
     while not os.path.exists(ftp_log_file):
@@ -69,7 +89,7 @@ def read_log_file(logger, app_config):
         logger.info("VSFTPD log file is less than 64 bytes... waiting...")
         time.sleep(1)
         filesize = os.path.getsize(ftp_log_file)
-        print(filesize)
+        print filesize
     # end while
 
     logger.info("STARTUP: Beginning trace of VSFTPD log file.")
@@ -81,11 +101,12 @@ def read_log_file(logger, app_config):
         for line in follow(fstream):
             if line_trigger in line:
                 thread_name = 'line-handler-' + str(line_count)
-                t = threading.Thread(name=thread_name, target=parse_upload_file_line,
-                                     args=(line, logger, app_config, )).start()
+                threading.Thread(name=thread_name, target=parse_upload_file_line,
+                                 args=(line, logger, app_config, )).start()
                 line_count += 1
                 if line_count % 10 == 0:
-                    logger.info("THREAD-STATUS: There are {} currently active threads.".format(threading.activeCount()))
+                    logger.info("THREAD-STATUS: There are {} currently active threads."
+                                .format(threading.activeCount()))
                 # fin
             # fin
 
@@ -95,6 +116,14 @@ def read_log_file(logger, app_config):
 
 
 def parse_upload_file_line(line, logger, app_config):
+    """ Function parses the log file line for the information required to push
+     the file to s3.
+
+    :param line: The line found containing the trigger string
+    :param logger: The logging handler
+    :param app_config: The application configuration
+    :return:
+    """
     import datetime
 
     # Set Up
@@ -103,7 +132,8 @@ def parse_upload_file_line(line, logger, app_config):
     start_timing = time.time()
 
     start_date = datetime.datetime.now()
-    date_string = start_date.strftime('%Y') + "-" + start_date.strftime("%m") + "-" + start_date.strftime("%d")
+    date_string = start_date.strftime('%Y') + "-" + start_date.strftime("%m") + "-" + \
+                  start_date.strftime("%d")
     hour_string = "Hour-" + str(start_date.hour)
 
     line_parts = line.split(",")
@@ -148,13 +178,30 @@ def parse_upload_file_line(line, logger, app_config):
 # end parse_upload_file_line
 
 
-def push_file_to_s3(logger, app_config, camera, date_part, hour_part, img_type, s3_file_name, local_file, start_timing):
+def push_file_to_s3(logger, app_config, camera, date_part, hour_part, img_type,
+                    s3_file_name, local_file, start_timing):
+    """ Fuction uploads the specified file to s3
+
+    :param logger: The application logging handler
+    :param app_config: The application config
+    :param camera: The name of the camera
+    :param date_part: The date part of the s3 object path/name
+    :param hour_part: The hour part of the s3 object path/name
+    :param img_type: The type of image - video or still generally
+    :param s3_file_name: The object/file name for s3 with no prefix
+    :param local_file: The full path to the local file
+    :param start_timing: When processing of the log file line started - used to output
+                         the total processing time.
+    :return:
+    """
     import boto3
-    s3 = boto3.resource('s3')
+    s3_resource = boto3.resource('s3')
     logging.getLogger('boto3').addHandler(logger)
     s3_object = get_config_item(app_config, 's3_info.object_base') + \
-                '/' + camera + '/' + date_part + '/' + hour_part + '/' + img_type + '/' + s3_file_name
-    s3.Object(get_config_item(app_config, 's3_info.bucket_name'), s3_object).put(Body=open(local_file, 'rb'))
+                '/' + camera + '/' + date_part + '/' + hour_part + '/' + \
+                img_type + '/' + s3_file_name
+    s3_resource.Object(get_config_item(app_config, 's3_info.bucket_name'), s3_object).\
+        put(Body=open(local_file, 'rb'))
     totaltime = time.time() - start_timing
     logger.info("S3 Object: {} written to s3 in {} seconds.".format(s3_object, totaltime))
     sys.exit(0)
@@ -162,13 +209,19 @@ def push_file_to_s3(logger, app_config, camera, date_part, hour_part, img_type, 
 
 
 def transcodetomp4(file_in):
+    """ Transcodes our .mkv file to .mp4 prior to upload to s3
+
+    :param file_in: The full path to the .mkv file.
+    :return: The full path to the resulting .mp4 file
+    """
 
     import subprocess
 
     file_out = file_in.replace('.mkv', '.mp4')
 
-    convert_command = '/usr/bin/avconv -i "{}" -f mp4 -vcodec copy -acodec libfaac -b:a 112k -ac 2 -y "{}"'\
-        .format(file_in, file_out)
+    convert_command = '/usr/bin/avconv -i "{}" -f mp4 -vcodec copy -acodec " +' \
+                      'libfaac -b:a 112k -ac 2 -y "{}"' \
+                      .format(file_in, file_out)
 
     try:
         subprocess.check_call(convert_command, shell=True)
@@ -180,13 +233,18 @@ def transcodetomp4(file_in):
 
 
 def config_reader(config_file):
+    """ Reads and validates the config file specified.
+
+    :param config_file: The config file (default or passed in on command line)
+    :return: configuration dict - or false if an error occurs.
+    """
     if os.path.exists(config_file):
         with open(config_file, 'r') as cfile:
             app_config = json.load(cfile)
         # end with
         return app_config
     else:
-        print("The config file: {} does not exist, please try again.".format(config_file))
+        print "The config file: {} does not exist, please try again.".format(config_file)
         return False
     # fin
 
@@ -194,6 +252,13 @@ def config_reader(config_file):
 
 
 def get_config_item(app_config, item):
+    """ Gets a specified parameter from the configuration. Nested parameters
+     are provided to this function with dot notation e.g., foo.bar.baz
+
+    :param app_config: Configuration dict
+    :param item: Dot notation for parameter to return.
+    :return:
+    """
     item_path = item.split('.')
     this_config = app_config
     for path_part in item_path:
