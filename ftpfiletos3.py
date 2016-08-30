@@ -22,45 +22,18 @@ def main():
     :return:
     """
     # Locate and init config.
-    default_config = "config.json"
-    if len(sys.argv) == 2:
-        # config from command line
-        app_config = config_reader(sys.argv[1])
-    else:
-        # config shoudl be in default
-        app_config = config_reader(default_config)
-    # fin
+    app_config = check_config_file()
     if not app_config:
-        print "Exiting due to invalid config file."
         sys.exit()
-    # fin
-
-    pid = str(os.getpid())
-    pidfile = get_config_item(app_config, 'app_pid_file')
 
     # set up logger
-    app_log_file = get_config_item(app_config, 'app_log_file.file')
-
-    app_logger = logging.getLogger('AppLogger')
-    app_logger.setLevel(logging.DEBUG)
-
-    # Add the log message handler to the logger
-    handler = logging.handlers.RotatingFileHandler(
-        app_log_file, maxBytes=get_config_item(app_config, 'app_log_file.rotate_at_in_bytes'),
-        backupCount=4)
-    formatter = logging.Formatter(get_config_item(app_config, 'app_log_file.log_format'))
-    handler.setFormatter(formatter)
-
-    app_logger.addHandler(handler)
-
-    if os.path.isfile(pidfile):
-        print "{} already exists, exiting".format(pidfile)
-        app_logger.info("STARTUP: PID file exists... exiting...")
+    app_logger = logger_setup(app_config)
+    if not app_logger:
         sys.exit()
-    with (open(pidfile, 'w')) as pidfilestream:
-        pidfilestream.write(pid)
-        pidfilestream.close()
-    # end with
+
+    # PID file
+    if not create_pid_file(app_config, app_logger):
+        sys.exit()
 
     app_logger.info("STARTUP: Starting now - getting VSFTPD log file...")
 
@@ -68,6 +41,85 @@ def main():
                      args=(app_logger, app_config, )).start()
 
 # end Main
+
+
+def create_pid_file(app_config, app_logger):
+    """ Creates the pid file.
+
+    :param app_config: Dict containing the app config
+    :param app_logger: The logging handler
+    :return:
+    """
+    pid = str(os.getpid())
+    pidfile = get_config_item(app_config, 'app_pid_file')
+
+    if os.path.isfile(pidfile):
+        print "{} already exists, exiting".format(pidfile)
+        app_logger.info("STARTUP: PID file exists... exiting...")
+        return False
+    try:
+        with (open(pidfile, 'w')) as pidfilestream:
+            pidfilestream.write(pid)
+            pidfilestream.close()
+            return True
+        # end with
+    except IOError:
+        app_logger.error("STARTUP: Could not create pid file at: {}".format(pidfile))
+        return False
+
+# end create_pid_file
+
+
+def logger_setup(app_config):
+    """ Sets up the application logger at startup
+
+    :param app_config: Dict containing the application config.
+    :return: The logging handler
+    """
+    # set up logger
+    app_log_file = get_config_item(app_config, 'app_log_file.file')
+
+    app_logger = logging.getLogger('AppLogger')
+    app_logger.setLevel(logging.DEBUG)
+
+    try:
+        # Add the log message handler to the logger
+        handler = logging.handlers.RotatingFileHandler(
+            app_log_file, maxBytes=get_config_item(app_config, 'app_log_file.rotate_at_in_bytes'),
+            backupCount=4)
+        formatter = logging.Formatter(get_config_item(app_config, 'app_log_file.log_format'))
+        handler.setFormatter(formatter)
+
+        app_logger.addHandler(handler)
+    except IOError:
+        print "Can not open the log file: {}... exiting...".format(app_log_file)
+        return False
+    # end try
+
+    return app_logger
+# end logger_setup
+
+
+def check_config_file():
+    """ validates either the default or command line provided config file.
+
+    :return: Configuration Dict
+    """
+    # Locate and init config.
+    default_config = "config.json"
+    if len(sys.argv) == 2:
+        # config from command line
+        app_config = config_reader(sys.argv[1])
+    else:
+        # config should be in default
+        app_config = config_reader(default_config)
+    # fin
+    if not app_config:
+        print "Exiting due to invalid config file."
+        return False
+    # fin
+    return app_config
+# end check_config_file
 
 
 def read_log_file(logger, app_config):
