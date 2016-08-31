@@ -131,5 +131,27 @@ class TestFtpFileToS3(unittest.TestCase):
         runit = ftpfiletos3.parse_upload_file_line(log_line, logger, this_config, True)
         self.assertTrue(runit)
 
+    def test_parse_log_line_with_old_camera(self):
+        log_line = '/var/log/vsftpd.log:Tue Aug 30 16:43:23 2016 [pid 18203] ' +\
+                   '[securityspy] OK UPLOAD: Client "::ffff:192.168.0.72", ' +\
+                   '"/home/securityspy/security-images/alarm-images/downdown/000DC5D4D0F7(downdown)' +\
+                   '_1_20160830154350_5219.jpg", 30996 bytes, 70.52Kbyte/sec'
+        sys.argv[1] = 'testdata/valid_config.json'
+        this_config = ftpfiletos3.check_config_file()
+        this_config['app_log_file']['file'] = 'testdata/test_log_file.log'
+        this_config['log_file_to_follow']['line_identifier'] = 'OK UPLOAD'
+        logger = ftpfiletos3.logger_setup(this_config)
+        runit = ftpfiletos3.parse_upload_file_line(log_line, logger, this_config, True)
+        self.assertTrue(runit)
+
+    def test_parse_log_line_with_empty_file(self):
+        log_line = '/var/log/vsftpd.log:,thisfile.foo,Kbyte/sec'
+        sys.argv[1] = 'testdata/valid_config.json'
+        this_config = ftpfiletos3.check_config_file()
+        this_config['app_log_file']['file'] = 'testdata/test_log_file.log'
+        this_config['log_file_to_follow']['line_identifier'] = 'OK UPLOAD'
+        logger = ftpfiletos3.logger_setup(this_config)
+        runit = ftpfiletos3.parse_upload_file_line(log_line, logger, this_config, True)
+        self.assertTrue(runit)
 
 # end class
