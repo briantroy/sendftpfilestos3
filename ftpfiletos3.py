@@ -263,13 +263,13 @@ def push_file_to_s3(logger, app_config, s3_object_info, start_timing):
     s3_resource = boto3.resource('s3')
     logging.getLogger('boto3').addHandler(logger)
     s3_object = get_config_item(app_config, 's3_info.object_base') + \
-                                            '/' + s3_object_info['camera'] + '/' + \
-                                            s3_object_info['date_part'] + '/' + \
-                                            s3_object_info['hour_part'] + '/' + \
+                                            '/' + s3_object_info['camera_name'] + '/' + \
+                                            s3_object_info['date_string'] + '/' + \
+                                            s3_object_info['hour_string'] + '/' + \
                                             s3_object_info['img_type'] + '/' + \
-                                            s3_object_info['s3_file_name']
+                                            s3_object_info['just_file']
     s3_resource.Object(get_config_item(app_config, 's3_info.bucket_name'),
-                       s3_object).put(Body=open(s3_object_info['local_file'], 'rb'))
+                       s3_object).put(Body=open(s3_object_info['file_name'], 'rb'))
     totaltime = time.time() - start_timing
     logger.info("S3 Object: {} written to s3 in {} seconds.".format(s3_object, totaltime))
     sys.exit(0)
