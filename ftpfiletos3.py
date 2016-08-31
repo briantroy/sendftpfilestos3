@@ -186,60 +186,62 @@ def parse_upload_file_line(line, logger, app_config, is_test=False):
     """
     import datetime
 
+    s3_object_info = {}
     # Set Up
     base_dir = get_config_item(app_config, 'ftp_base_dir')
 
     start_timing = time.time()
 
     start_date = datetime.datetime.now()
-    date_string = start_date.strftime('%Y') + "-" + start_date.strftime("%m") + "-" + \
-                  start_date.strftime("%d")
-    hour_string = "Hour-" + str(start_date.hour)
+    s3_object_info['date_string'] = start_date.strftime('%Y') + "-" + \
+                                    start_date.strftime("%m") + "-" + \
+                                    start_date.strftime("%d")
+    s3_object_info['hour_string'] = "Hour-" + str(start_date.hour)
 
     line_parts = line.split(",")
-    file_name = line_parts[1].strip()
-    file_name = file_name.replace('"', '')
-    logger.info("File for upload is: {} with file size: {}".format(file_name, line_parts[2]))
+    s3_object_info['file_name'] = line_parts[1].strip()
+    s3_object_info['file_name'] = s3_object_info['file_name'].replace('"', '')
+    logger.info("File for upload is: {} with file size: {}".
+                format(s3_object_info['file_name'], line_parts[2]))
     if line_parts[2].find('Kbyte/sec') != -1:
-        logger.info("Skippking file {} because it is empty.".format(file_name))
+        logger.info("Skippking file {} because it is empty.".format(s3_object_info['file_name']))
         if not is_test:
             sys.exit(0)
         return True
     # fin
 
     # Parse the file name to get the sub-folder and object name.
-    path_end = file_name.replace(base_dir, "")
+    path_end = s3_object_info['file_name'].replace(base_dir, "")
     path_parts = path_end.split('/')
     if len(path_parts) != 5:
         lastpart = len(path_parts) - 1
         # Clean up parens in the file name
-        just_file = path_parts[lastpart].replace('(', '')
-        just_file = just_file.replace(')', '')
-        img_type = "snap"
+        s3_object_info['just_file'] = path_parts[lastpart].replace('(', '')
+        s3_object_info['just_file'] = s3_object_info['just_file'].replace(')', '')
+        s3_object_info['img_type'] = "snap"
     else:
-        img_type = path_parts[3]
-        just_file = path_parts[4]
+        s3_object_info['img_type'] = path_parts[3]
+        s3_object_info['just_file'] = path_parts[4]
     # fin
 
-    if just_file.find('.mkv') != -1:
+    if s3_object_info['just_file'].find('.mkv') != -1:
         # Convert mkv to mp4 file
-        result = transcodetomp4(file_name)
-        if result != file_name:
-            file_name = result
-            just_file = just_file.replace('.mkv', '.mp4')
+        result = transcodetomp4(s3_object_info['file_name'])
+        if result != s3_object_info['file_name']:
+            s3_object_info['file_name'] = result
+            s3_object_info['just_file'] = s3_object_info['just_file'].replace('.mkv', '.mp4')
         else:
-            logger.error("File {} could not be transcoded to mp4.".format(file_name))
+            logger.error("File {} could not be transcoded to mp4.".
+                         format(s3_object_info['file_name']))
             if not is_test:
                 sys.exit(0)
             return True
         # fin
     # fin
-    camera_name = path_parts[1]
+    s3_object_info['camera_name'] = path_parts[1]
 
     if not is_test:
-        push_file_to_s3(logger, app_config, camera_name, date_string,
-                        hour_string, img_type, just_file,
-                        file_name, start_timing)
+        push_file_to_s3(logger, app_config, s3_object_info, start_timing)
     if not is_test:
         sys.exit(0)
 
@@ -247,18 +249,12 @@ def parse_upload_file_line(line, logger, app_config, is_test=False):
 # end parse_upload_file_line
 
 
-def push_file_to_s3(logger, app_config, camera, date_part, hour_part, img_type,
-                    s3_file_name, local_file, start_timing):
+def push_file_to_s3(logger, app_config, s3_object_info, start_timing):
     """ Fuction uploads the specified file to s3
 
     :param logger: The application logging handler
     :param app_config: The application config
-    :param camera: The name of the camera
-    :param date_part: The date part of the s3 object path/name
-    :param hour_part: The hour part of the s3 object path/name
-    :param img_type: The type of image - video or still generally
-    :param s3_file_name: The object/file name for s3 with no prefix
-    :param local_file: The full path to the local file
+    :param s3_object_info: Dict containing the information needed to upload the file to s3
     :param start_timing: When processing of the log file line started - used to output
                          the total processing time.
     :return:
@@ -267,10 +263,13 @@ def push_file_to_s3(logger, app_config, camera, date_part, hour_part, img_type,
     s3_resource = boto3.resource('s3')
     logging.getLogger('boto3').addHandler(logger)
     s3_object = get_config_item(app_config, 's3_info.object_base') + \
-                '/' + camera + '/' + date_part + '/' + hour_part + '/' + \
-                img_type + '/' + s3_file_name
-    s3_resource.Object(get_config_item(app_config, 's3_info.bucket_name'), s3_object).\
-        put(Body=open(local_file, 'rb'))
+                                            '/' + s3_object_info['camera'] + '/' + \
+                                            s3_object_info['date_part'] + '/' + \
+                                            s3_object_info['hour_part'] + '/' + \
+                                            s3_object_info['img_type'] + '/' + \
+                                            s3_object_info['s3_file_name']
+    s3_resource.Object(get_config_item(app_config, 's3_info.bucket_name'),
+                       s3_object).put(Body=open(s3_object_info['local_file'], 'rb'))
     totaltime = time.time() - start_timing
     logger.info("S3 Object: {} written to s3 in {} seconds.".format(s3_object, totaltime))
     sys.exit(0)

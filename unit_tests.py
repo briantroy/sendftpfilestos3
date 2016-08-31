@@ -9,7 +9,7 @@ import ftpfiletos3
 class TestFtpFileToS3(unittest.TestCase):
 
     def test_app_config_error(self):
-        sys.argv.remove('tests')
+        sys.argv.remove('unit_tests')
         output1 = ftpfiletos3.check_config_file()
         sys.argv.append("not a file")
         output2 = ftpfiletos3.check_config_file()

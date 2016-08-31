@@ -1,2 +1,2 @@
-coverage run -m unittest tests
+coverage run -m unittest unit_tests
 coverage html
