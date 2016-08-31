@@ -10,9 +10,9 @@
     "log_format": "%(asctime)s - %(levelname)s - %(thread)d - %(threadName)s - %(message)s"
   },
   "app_pid_file": "/tmp/ftpfiletos3.pid",
-  "ftp_base_dir": "/foo/bar",
+  "ftp_base_dir": "/Volumes/internal-sd/Development/sendftpfilestos3",
   "s3_info": {
-    "bucket_name": "security-alarms",
+    "bucket_name": "security-alarms-test",
     "object_base": "patrolcams"
   }
 

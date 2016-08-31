@@ -174,13 +174,14 @@ def read_log_file(logger, app_config, is_test=False):
 # end read_log_file
 
 
-def parse_upload_file_line(line, logger, app_config):
+def parse_upload_file_line(line, logger, app_config, is_test=False):
     """ Function parses the log file line for the information required to push
      the file to s3.
 
     :param line: The line found containing the trigger string
     :param logger: The logging handler
     :param app_config: The application configuration
+    :param is_test: Default False - set true to test the function and get a valid return.
     :return:
     """
     import datetime
@@ -201,7 +202,9 @@ def parse_upload_file_line(line, logger, app_config):
     logger.info("File for upload is: {} with file size: {}".format(file_name, line_parts[2]))
     if line_parts[2].find('Kbyte/sec') != -1:
         logger.info("Skippking file {} because it is empty.".format(file_name))
-        sys.exit(0)
+        if not is_test:
+            sys.exit(0)
+        return True
     # fin
 
     # Parse the file name to get the sub-folder and object name.
@@ -226,14 +229,21 @@ def parse_upload_file_line(line, logger, app_config):
             just_file = just_file.replace('.mkv', '.mp4')
         else:
             logger.error("File {} could not be transcoded to mp4.".format(file_name))
-            sys.exit(0)
+            if not is_test:
+                sys.exit(0)
+            return True
         # fin
     # fin
     camera_name = path_parts[1]
 
-    push_file_to_s3(logger, app_config, camera_name, date_string, hour_string, img_type, just_file,
-                    file_name, start_timing)
-    sys.exit(0)
+    if not is_test:
+        push_file_to_s3(logger, app_config, camera_name, date_string,
+                        hour_string, img_type, just_file,
+                        file_name, start_timing)
+    if not is_test:
+        sys.exit(0)
+
+    return True
 # end parse_upload_file_line
 
 

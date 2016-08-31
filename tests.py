@@ -37,14 +37,14 @@ class TestFtpFileToS3(unittest.TestCase):
         config_file = 'testdata/valid_config.json'
         output = ftpfiletos3.config_reader(config_file)
         test_data = output['ftp_base_dir']
-        self.assertEqual(test_data, '/foo/bar')
+        self.assertEqual(test_data, '/Volumes/internal-sd/Development/sendftpfilestos3')
     # end test_good_config
 
     def test_good_app_config(self):
         sys.argv[1] = 'testdata/valid_config.json'
         output = ftpfiletos3.check_config_file()
         test_data = output['ftp_base_dir']
-        self.assertEqual(test_data, '/foo/bar')
+        self.assertEqual(test_data, '/Volumes/internal-sd/Development/sendftpfilestos3')
     # end test_good_config
 
     def test_pid_file_create(self):
@@ -115,6 +115,21 @@ class TestFtpFileToS3(unittest.TestCase):
         runit = ftpfiletos3.read_log_file(logger, this_config, True)
         self.assertTrue(runit)
     # end test_log_file_reader_small_file
+
+    def test_parse_log_line_with_video(self):
+        log_line = 'Tue Aug 30 16:30:30 2016 [pid 10220] [securityspy] OK UPLOAD: ' +\
+                   'Client "::ffff:192.168.0.89", ' +\
+                   '"/Volumes/internal-sd/Development/sendftpfilestos3/testdata/' +\
+                   'foo/record/MDalarm_20160830_152954.mkv", ' +\
+                   '3885542 bytes, 129.01Kbyte/sec'
+
+        sys.argv[1] = 'testdata/valid_config.json'
+        this_config = ftpfiletos3.check_config_file()
+        this_config['app_log_file']['file'] = 'testdata/test_log_file.log'
+        this_config['log_file_to_follow']['line_identifier'] = 'OK UPLOAD'
+        logger = ftpfiletos3.logger_setup(this_config)
+        runit = ftpfiletos3.parse_upload_file_line(log_line, logger, this_config, True)
+        self.assertTrue(runit)
 
 
 # end class
