@@ -8,6 +8,8 @@ import boto3
 
 def lambda_handler(event, context):
     """ Lambda Handler """
+
+    do_transcode = False
     # print("Received event: " + json.dumps(event, indent=2))
     start_time = time.time()
     # Get the object from the event and show its content type
@@ -21,24 +23,29 @@ def lambda_handler(event, context):
 
     if "-small.mp4" not in key:
 
-        # Transcode the file for small screens:
-        transcoder = boto3.client('elastictranscoder')
         small_vid_key = key.replace(".mp4", "-small.mp4")
-        transcoder.create_job(
-            PipelineId='1472321641566-68ryf2',
-            Input={
-                'Key': key,
-                'FrameRate': 'auto',
-                'Resolution': 'auto',
-                'AspectRatio': 'auto',
-                'Interlaced': 'auto',
-                'Container': 'auto'
-            },
-            Outputs=[{
-                'Key': small_vid_key,
-                'PresetId': '1351620000001-000061'
-            }]
-        )
+
+        if do_transcode:
+            # Transcode the file for small screens:
+            transcoder = boto3.client('elastictranscoder')
+            transcoder.create_job(
+                PipelineId='1472321641566-68ryf2',
+                Input={
+                    'Key': key,
+                    'FrameRate': 'auto',
+                    'Resolution': 'auto',
+                    'AspectRatio': 'auto',
+                    'Interlaced': 'auto',
+                    'Container': 'auto'
+                },
+                Outputs=[{
+                    'Key': small_vid_key,
+                    'PresetId': '1351620000001-000061'
+                }]
+            )
+        else:
+            small_vid_key = key
+        # fin
 
         dyndb = boto3.resource('dynamodb')
         vid_table = dyndb.Table('security_alarm_videos')
