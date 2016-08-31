@@ -6,4 +6,4 @@ then
     /bin/rm -Rf "$pidfile" 
 fi
 sleep 2
-/usr/bin/python /home/brian.roy/brian-extra/sendftpfilestos3/ftpfiletos3.py vsftpd-config.json >> /dev/null &
+/usr/bin/python /home/brian.roy/brian-extra/sendftpfilestos3/ftpfiletos3.py /home/brian.roy/brian-extra/sendftpfilestos3/vsftpd-config.json >> /var/log/restart-ftp2s3.log &
