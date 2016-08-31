@@ -288,16 +288,21 @@ def transcodetomp4(file_in):
 
     file_out = file_in.replace('.mkv', '.mp4')
 
-    convert_command = '/usr/bin/avconv -i "{}" -f mp4 -vcodec copy -acodec " +' \
-                      'libfaac -b:a 112k -ac 2 -y "{}"' \
-                      .format(file_in, file_out)
+    if os.path.isfile('/usr/bin/avconv'):
 
-    try:
-        subprocess.check_call(convert_command, shell=True)
-    except subprocess.CalledProcessError:
+        convert_command = '/usr/bin/avconv -i "{}" -f mp4 -vcodec copy -acodec " +' \
+                          'libfaac -b:a 112k -ac 2 -y "{}"' \
+                          .format(file_in, file_out)
+
+        try:
+            subprocess.check_call(convert_command, shell=True)
+        except subprocess.CalledProcessError:
+            return file_in
+
+        return file_out
+    else:
         return file_in
-
-    return file_out
+    # fin
 # end transcodetomp4
 
 
