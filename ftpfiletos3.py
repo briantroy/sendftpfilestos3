@@ -226,7 +226,7 @@ def parse_upload_file_line(line, logger, app_config, is_test=False):
 
     if s3_object_info['just_file'].find('.mkv') != -1:
         # Convert mkv to mp4 file
-        result = transcodetomp4(s3_object_info['file_name'])
+        result = transcodetomp4(s3_object_info['file_name'], logger)
         if result != s3_object_info['file_name']:
             s3_object_info['file_name'] = result
             s3_object_info['just_file'] = s3_object_info['just_file'].replace('.mkv', '.mp4')
@@ -276,7 +276,7 @@ def push_file_to_s3(logger, app_config, s3_object_info, start_timing):
 # end push_file_to_s3
 
 
-def transcodetomp4(file_in):
+def transcodetomp4(file_in, logger):
     """ Transcodes our .mkv file to .mp4 prior to upload to s3
 
     :param file_in: The full path to the .mkv file.
@@ -295,6 +295,7 @@ def transcodetomp4(file_in):
         try:
             subprocess.check_call(convert_command, shell=True)
         except subprocess.CalledProcessError:
+            logger.error("The command to transcode: {} --- failed...".format(convert_command))
             return file_in
 
         return file_out
