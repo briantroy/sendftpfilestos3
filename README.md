@@ -1,7 +1,7 @@
 # sendftpfilestos3
 Sends files transfered via FTP on a secure network to S3.
 
-The genesys of this project was to have off-site storage of security camera alarms - i.e., motion detection events. The goal was near real time upload.
+The genesis of this project was to have off-site storage of security camera alarms - i.e., motion detection events. The goal was near real time upload.
 
 The original project (now quite old, but can be found here: https://github.com/briantroy/Zoneminder-Alert-Image-Upload-to-Amazon-S3) used node.js and relied on Zoneminder. This project decouples the upload from Zoneminder and allows any camera that can do a simple FTP upload to have files pushed to Amazon S3.
 A single RaspberryPi powers both my internal FTP server and runs the Python script found in this repo.
