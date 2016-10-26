@@ -38,7 +38,7 @@ def lambda_handler(event, context):
                 {
                     "Action": "execute-api:Invoke",
                     "Effect": effect,
-                    "Resource": "arn:aws:execute-api:us-east-1:*:7k8o0sgjli/securityvideos/*"
+                    "Resource": "arn:aws:execute-api:us-east-1:*:!!your api info!!*"
                 }
             ]
         }
