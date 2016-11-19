@@ -14,28 +14,28 @@ def lambda_handler(event, context):
 
     if 'camera' in event['params']['path']:
         camname = event['params']['path']['camera']
-        print("Request for camera video timeline - Camera: " + camname)
-        vid_table = dyndb.Table('security_alarm_videos')
+        print("Request for camera image timeline - Camera: " + camname)
+        vid_table = dyndb.Table('security_alarm_images')
         response = vid_table.query(
-            TableName="security_alarm_videos",
+            TableName="security_alarm_images",
             Select='ALL_ATTRIBUTES',
             KeyConditionExpression=Key('camera_name').eq(camname),
             ScanIndexForward=False,
-            Limit=5,
+            Limit=10,
         )
     else:
 
-        # Must be a video timeline request
+        # Must be a image timeline request
 
         # defaults:
         num_results = 10
-        video_date = time.strftime('%Y-%m-%d')
-        # print(video_date)
-        print("Request for video timeline - Date: " + video_date)
+        image_date = time.strftime('%Y-%m-%d')
+        # print(image_date)
+        print("Request for image timeline - Date: " + image_date)
 
         if 'querystring' in event['params']:
-            if 'video_date' in event['params']['querystring']:
-                video_date = event['params']['querystring']['video_date']
+            if 'image_date' in event['params']['querystring']:
+                image_date = event['params']['querystring']['image_date']
             # Fin
             if 'num_results' in event['params']['querystring']:
                 num_results = int(event['params']['querystring']['num_results'])
@@ -44,11 +44,11 @@ def lambda_handler(event, context):
 
         # Execute the query
 
-        vid_table = dyndb.Table('security_video_timeline')
+        vid_table = dyndb.Table('security_image_timeline')
         response = vid_table.query(
-            TableName="security_video_timeline",
+            TableName="security_image_timeline",
             Select='ALL_ATTRIBUTES',
-            KeyConditionExpression=Key('capture_date').eq(video_date),
+            KeyConditionExpression=Key('capture_date').eq(image_date),
             ScanIndexForward=False,
             Limit=num_results,
         )
@@ -77,16 +77,6 @@ def generate_signed_uri(data):
             }
         )
         item['uri'] = url
-        if 'object_key_small' in item:
-            url = s3_client.generate_presigned_url(
-                ClientMethod='get_object',
-                Params={
-                    'Bucket': bucket,
-                    'Key': item['object_key_small']
-                }
-            )
-            item['uri_small_video'] = url
-        # fin
         new_items.append(item)
 
     # end for

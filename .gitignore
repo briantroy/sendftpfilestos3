@@ -3,3 +3,4 @@ vsftpd-config.json
 static_code_analysis/*.html
 htmlcov
 .coverage
+testdata
