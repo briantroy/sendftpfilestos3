@@ -12,49 +12,135 @@ def lambda_handler(event, context):
 
     dyndb = boto3.resource('dynamodb')
 
-    if 'camera' in event['params']['path']:
-        camname = event['params']['path']['camera']
-        print("Request for camera image timeline - Camera: " + camname)
-        vid_table = dyndb.Table('security_alarm_images')
-        response = vid_table.query(
-            TableName="security_alarm_images",
-            Select='ALL_ATTRIBUTES',
-            KeyConditionExpression=Key('camera_name').eq(camname),
-            ScanIndexForward=False,
-            Limit=10,
-        )
-    else:
+    image_date = None
+    num_results = 10
+    older_than_ts = None
+    newer_than_ts = None
+    camera_name = None
 
+    if 'querystring' in event['params']:
+        if 'image_date' in event['params']['querystring']:
+            image_date = event['params']['querystring']['image_date']
+        # Fin
+        if 'num_results' in event['params']['querystring']:
+            num_results = int(event['params']['querystring']['num_results'])
+        # Fin
+        if 'older_than_ts' in event['params']['querystring']:
+            older_than_ts = int(event['params']['querystring']['older_than_ts'])
+        # Fin
+        if 'newer_than_ts' in event['params']['querystring']:
+            newer_than_ts = int(event['params']['querystring']['newer_than_ts'])
+            # Fin
+    # Fin
+    if 'camera' in event['params']['path']:
+        camera_name = event['params']['path']['camera']
+    # Fin
+
+    if camera_name is not None:
+        print("Request for camera image timeline - Camera: " + camera_name)
+    else:
         # Must be a image timeline request
 
         # defaults:
-        num_results = 10
-        image_date = time.strftime('%Y-%m-%d')
-        # print(image_date)
-        print("Request for image timeline - Date: " + image_date)
+        if image_date is None:
+            image_date = time.strftime('%Y-%m-%d')
+        # Fin
 
-        if 'querystring' in event['params']:
-            if 'image_date' in event['params']['querystring']:
-                image_date = event['params']['querystring']['image_date']
+        print("Request for image timeline - Date: " + image_date)
+    # Fin
+
+    response = execute_dynamo_query(image_date, num_results, older_than_ts, newer_than_ts, camera_name)
+
+    return generate_signed_uri(response)
+
+
+def execute_dynamo_query(image_date, num_results, older_than_ts, newer_than_ts, camera_name):
+    """ Generates the correct DynamoDB Query based on input and returns the result.
+
+    :param image_date:
+    :param num_results:
+    :param older_than_ts:
+    :param newer_than_ts:
+    :return:
+    """
+
+    dyndb = boto3.resource('dynamodb')
+    response = None
+
+    if camera_name is not None and image_date is None:
+        # Request for camera timeline
+        vid_table = dyndb.Table('security_alarm_images')
+
+        if older_than_ts is None and newer_than_ts is None:
+            # No timestamp provided to scroll back/forward - get most recent
+            response = vid_table.query(
+                Select='ALL_ATTRIBUTES',
+                KeyConditionExpression=Key('camera_name').eq(camera_name),
+                ScanIndexForward=False,
+                Limit=num_results,
+            )
+            return response
+        else:
+            if older_than_ts is not None:
+                # Get items older than timestamp
+                response = vid_table.query(
+                    Select='ALL_ATTRIBUTES',
+                    KeyConditionExpression=Key('camera_name').eq(camera_name),
+                    ScanIndexForward=False,
+                    Limit=num_results,
+                    ExclusiveStartKey=older_than_ts,
+                )
+                return response
+            elif newer_than_ts is not None:
+                # Get items newer than timestamp
+                response = vid_table.query(
+                    Select='ALL_ATTRIBUTES',
+                    KeyConditionExpression=Key('camera_name').eq(camera_name),
+                    ScanIndexForward=True,
+                    Limit=num_results,
+                    ExclusiveStartKey=newer_than_ts,
+                )
+                return response
             # Fin
-            if 'num_results' in event['params']['querystring']:
-                num_results = int(event['params']['querystring']['num_results'])
+        # Fin
+    # Fin
+
+    if camera_name is None and image_date is not None:
+        # Timeline request without regard for camera
+        vid_table = dyndb.Table('security_image_timeline')
+        if older_than_ts is None and newer_than_ts is None:
+            response = vid_table.query(
+                Select='ALL_ATTRIBUTES',
+                KeyConditionExpression=Key('capture_date').eq(image_date),
+                ScanIndexForward=False,
+                Limit=num_results,
+            )
+            return response
+        else:
+            if older_than_ts is not None:
+                # Get items older than timestamp
+                response = vid_table.query(
+                    Select='ALL_ATTRIBUTES',
+                    KeyConditionExpression=Key('capture_date').eq(camera_name),
+                    ScanIndexForward=False,
+                    Limit=num_results,
+                    ExclusiveStartKey=older_than_ts,
+                )
+                return response
+            elif newer_than_ts is not None:
+                # Get items newer than timestamp
+                response = vid_table.query(
+                    Select='ALL_ATTRIBUTES',
+                    KeyConditionExpression=Key('capture_date').eq(camera_name),
+                    ScanIndexForward=True,
+                    Limit=num_results,
+                    ExclusiveStartKey=newer_than_ts,
+                )
+                return response
             # Fin
         # Fin
 
-        # Execute the query
-
-        vid_table = dyndb.Table('security_image_timeline')
-        response = vid_table.query(
-            TableName="security_image_timeline",
-            Select='ALL_ATTRIBUTES',
-            KeyConditionExpression=Key('capture_date').eq(image_date),
-            ScanIndexForward=False,
-            Limit=num_results,
-        )
-    # Fin
-
-    return generate_signed_uri(response)
+    return response
 
 
 def generate_signed_uri(data):
