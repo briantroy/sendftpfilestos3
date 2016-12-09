@@ -88,7 +88,7 @@ def execute_dynamo_query(image_date, num_results, older_than_ts, newer_than_ts, 
                     KeyConditionExpression=Key('camera_name').eq(camera_name),
                     ScanIndexForward=False,
                     Limit=num_results,
-                    ExclusiveStartKey=older_than_ts,
+                    ExclusiveStartKey={'camera_name': camera_name, 'event_ts': older_than_ts},
                 )
                 return response
             elif newer_than_ts is not None:
@@ -98,7 +98,7 @@ def execute_dynamo_query(image_date, num_results, older_than_ts, newer_than_ts, 
                     KeyConditionExpression=Key('camera_name').eq(camera_name),
                     ScanIndexForward=True,
                     Limit=num_results,
-                    ExclusiveStartKey=newer_than_ts,
+                    ExclusiveStartKey={'camera_name': camera_name, 'event_ts': newer_than_ts},
                 )
                 return response
             # Fin
@@ -121,20 +121,20 @@ def execute_dynamo_query(image_date, num_results, older_than_ts, newer_than_ts, 
                 # Get items older than timestamp
                 response = vid_table.query(
                     Select='ALL_ATTRIBUTES',
-                    KeyConditionExpression=Key('capture_date').eq(camera_name),
+                    KeyConditionExpression=Key('capture_date').eq(image_date),
                     ScanIndexForward=False,
                     Limit=num_results,
-                    ExclusiveStartKey=older_than_ts,
+                    ExclusiveStartKey={'capture_date': image_date, 'event_ts': older_than_ts},
                 )
                 return response
             elif newer_than_ts is not None:
                 # Get items newer than timestamp
                 response = vid_table.query(
                     Select='ALL_ATTRIBUTES',
-                    KeyConditionExpression=Key('capture_date').eq(camera_name),
+                    KeyConditionExpression=Key('capture_date').eq(image_date),
                     ScanIndexForward=True,
                     Limit=num_results,
-                    ExclusiveStartKey=newer_than_ts,
+                    ExclusiveStartKey={'capture_date': image_date, 'event_ts': newer_than_ts},
                 )
                 return response
             # Fin
