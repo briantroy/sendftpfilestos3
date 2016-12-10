@@ -4,6 +4,8 @@ from __future__ import print_function
 import urllib
 import time
 import boto3
+from decimal import Decimal
+import botocore_rekognition_beta
 
 
 def lambda_handler(event, context):
@@ -35,6 +37,42 @@ def lambda_handler(event, context):
     img_table.put_item(Item=save_data)
     img_timeline_table.put_item(Item=save_data)
 
+    get_rekognition_labels(key)
+
     print("Processing for " + key + " completed in: " + str(time.time() - start_time) +
           " seconds.")
 
+
+def get_rekognition_labels(object_key):
+    """
+    Gets the object rekognition labels for the image.
+    :param object_key:
+    :return:
+    """
+
+    bucket = 'security-alarms'
+    client = boto3.client('rekognition')
+
+    request = {
+        'Bucket': bucket,
+        'Name': object_key
+    }
+
+    response = client.detect_labels(Image={'S3Object': request})
+
+    write_labels_to_dynamo(object_key, response)
+
+
+def write_labels_to_dynamo(object_key, labels):
+    dyndb = boto3.resource('dynamodb')
+    img_labels_table = dyndb.Table('security_alarm_image_label_set')
+
+    for label_item in labels['Labels']:
+        save_data = {
+            'object_key': object_key,
+            'label': label_item['Name'],
+            'confidence': Decimal(str(label_item['Confidence']))
+            }
+
+        img_labels_table.put_item(Item=save_data)
+    # end For
