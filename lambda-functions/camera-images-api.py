@@ -51,7 +51,7 @@ def lambda_handler(event, context):
 
     response = execute_dynamo_query(image_date, num_results, older_than_ts, newer_than_ts, camera_name)
 
-    return generate_signed_uri(response)
+    return enrich_image_data(response)
 
 
 def execute_dynamo_query(image_date, num_results, older_than_ts, newer_than_ts, camera_name):
@@ -143,7 +143,7 @@ def execute_dynamo_query(image_date, num_results, older_than_ts, newer_than_ts, 
     return response
 
 
-def generate_signed_uri(data):
+def generate_signed_uri(item):
     """ Generates signed URIs for the videos - allowing app to load them.
 
     :param data: List of videos for which signed URIs will be generated.
@@ -152,20 +152,49 @@ def generate_signed_uri(data):
 
     s3_client = boto3.client('s3')
     bucket = "security-alarms"
+
+    url = s3_client.generate_presigned_url(
+        ClientMethod='get_object',
+        Params={
+            'Bucket': bucket,
+            'Key': item['object_key']
+        }
+    )
+
+    return url
+
+
+def get_image_label(object_key):
+    """
+    Gets the image labels for an image.
+
+    :param object_key:
+    :return:
+    """
+    dyndb = boto3.resource('dynamodb')
+
+    label_table = dyndb.Table('security_alarm_image_label_set')
+    response = label_table.query(
+        Select='SPECIFIC_ATTRIBUTES',
+        ProjectionExpression='label,confidence',
+        KeyConditionExpression=Key('object_key').eq(object_key),
+        ScanIndexForward=False,
+    )
+
+    return response['Items']
+
+
+def enrich_image_data(data):
+    """
+    Enriches the image data as needed.
+    :param data:
+    :return:
+    """
     new_items = []
-
     for item in data['Items']:
-        url = s3_client.generate_presigned_url(
-            ClientMethod='get_object',
-            Params={
-                'Bucket': bucket,
-                'Key': item['object_key']
-            }
-        )
-        item['uri'] = url
+        item['uri'] = generate_signed_uri(item)
+        # item['labels'] = get_image_label(item['object_key'])
         new_items.append(item)
-
-    # end for
 
     data['Items'] = new_items
 

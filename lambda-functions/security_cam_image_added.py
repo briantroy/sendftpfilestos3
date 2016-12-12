@@ -58,7 +58,7 @@ def get_rekognition_labels(object_key):
         'Name': object_key
     }
 
-    response = client.detect_labels(Image={'S3Object': request})
+    response = client.detect_labels(Image={'S3Object': request}, MaxLabels=10)
 
     write_labels_to_dynamo(object_key, response)
 
