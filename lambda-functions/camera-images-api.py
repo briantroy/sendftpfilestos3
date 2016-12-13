@@ -96,7 +96,7 @@ def execute_dynamo_query(image_date, num_results, older_than_ts, newer_than_ts, 
                 response = vid_table.query(
                     Select='ALL_ATTRIBUTES',
                     KeyConditionExpression=Key('camera_name').eq(camera_name),
-                    ScanIndexForward=False,
+                    ScanIndexForward=True,
                     Limit=num_results,
                     ExclusiveStartKey={'camera_name': camera_name, 'event_ts': newer_than_ts},
                 )
@@ -132,7 +132,7 @@ def execute_dynamo_query(image_date, num_results, older_than_ts, newer_than_ts, 
                 response = vid_table.query(
                     Select='ALL_ATTRIBUTES',
                     KeyConditionExpression=Key('capture_date').eq(image_date),
-                    ScanIndexForward=False,
+                    ScanIndexForward=True,
                     Limit=num_results,
                     ExclusiveStartKey={'capture_date': image_date, 'event_ts': newer_than_ts},
                 )
