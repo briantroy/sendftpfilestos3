@@ -375,10 +375,10 @@ def parse_date_time_from_object_key(object_key, camera_name, type):
         # FIN
     # FIN
     if type == 'record':
-        if date_time_string.endswith('.mp4'):
-            date_time_string = date_time_string[:-4]
         time_part = second_parts[last_part_idx]
         date_part = second_parts[(last_part_idx - 1)]
+        if time_part.endswith('.mp4'):
+            time_part = time_part[:-4]
     # FIN
 
 
