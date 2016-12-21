@@ -356,6 +356,9 @@ def parse_date_time_from_object_key(object_key, camera_name, type):
     :return:
     """
 
+    if camera_name == 'garage' or camera_name == 'crawlspace':
+        return time.gmtime()
+
     first_parts = object_key.split("/")
     last_part_idx = len(first_parts) - 1
     file_name = first_parts[last_part_idx]
