@@ -47,6 +47,13 @@ def lambda_handler(event, context):
             small_vid_key = key
         # fin
 
+        # Get Object Metadata
+        event_ts = time.time()
+        obj_metadata = get_s3_metadata(key)
+        if 'camera_timestamp' in obj_metadata:
+            event_ts = obj_metadata['camera_timestamp']
+            # FIN
+
         dyndb = boto3.resource('dynamodb')
         vid_table = dyndb.Table('security_alarm_videos')
         vid_timeline_table = dyndb.Table('security_video_timeline')
@@ -55,7 +62,8 @@ def lambda_handler(event, context):
                      'video_name': object_parts[5],
                      'capture_date': object_parts[2],
                      'capture_hour': object_parts[3],
-                     'event_ts': int(time.time()),
+                     'event_ts': int(event_ts),
+                     's3_arrival_time': int(time.time()),
                      'object_key': key,
                      'object_key_small': small_vid_key
                     }
@@ -68,3 +76,13 @@ def lambda_handler(event, context):
     else:
         print("Processing for " + key + " skipped - this is our transcoded file.")
     # fin
+
+
+def get_s3_metadata(object_key):
+    bucket_name = "security-alarms"
+    s3_resource = boto3.resource('s3')
+
+    response = s3_resource.ObjectSummary(bucket_name, object_key)
+    resp_obj = response.get()
+
+    return resp_obj['Metadata']
