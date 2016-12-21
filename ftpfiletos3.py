@@ -273,7 +273,7 @@ def push_file_to_s3(logger, app_config, s3_object_info, start_timing):
                                             s3_object_info['just_file']
     utc_ts = parse_date_time_from_object_key(s3_object)
     object_metadata = {'camera': s3_object_info['camera_name'],
-                       'camera_timestamp': utc_ts}
+                       'camera_timestamp': str(utc_ts)}
     s3_resource.Object(get_config_item(app_config, 's3_info.bucket_name'),
                        s3_object).put(Body=open(s3_object_info['file_name'], 'rb'),
                                       Metadata=object_metadata)
@@ -366,8 +366,13 @@ def parse_date_time_from_object_key(object_key):
     date_time_string = second_parts[last_part_idx]
     if date_time_string.endswith('.jpg'):
         date_time_string = date_time_string[:-4]
+    if date_time_string.endswith('.mp4'):
+        date_time_string = date_time_string[:-4]
 
     final_parts = date_time_string.split("-")
+    if len(final_parts) == 0:
+        final_parts = date_time_string.split("_")
+
     date_part = final_parts[0]
     time_part = final_parts[1]
 
