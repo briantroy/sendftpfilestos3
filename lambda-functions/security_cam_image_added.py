@@ -22,6 +22,13 @@ def lambda_handler(event, context):
     camera_name = object_parts[1]
     # print("Camera Name: " + camera_name)
 
+    # Get Object Metadata
+    event_ts = time.time()
+    obj_metadata = get_s3_metadata(key)
+    if 'camera_timestamp' in obj_metadata:
+        event_ts = obj_metadata['camera_timestamp']
+    # FIN
+
     dyndb = boto3.resource('dynamodb')
     img_table = dyndb.Table('security_alarm_images')
     img_timeline_table = dyndb.Table('security_image_timeline')
@@ -30,7 +37,8 @@ def lambda_handler(event, context):
                  'image_name': object_parts[5],
                  'capture_date': object_parts[2],
                  'capture_hour': object_parts[3],
-                 'event_ts': int(time.time()),
+                 'event_ts': int(event_ts),
+                 's3_arrival_ts': int(time.time()),
                  'object_key': key
                 }
 
@@ -61,6 +69,16 @@ def get_rekognition_labels(object_key):
     response = client.detect_labels(Image={'S3Object': request}, MaxLabels=10)
 
     write_labels_to_dynamo(object_key, response)
+
+
+def get_s3_metadata(object_key):
+    bucket_name = "security-alarms"
+    s3_resource = boto3.resource('s3')
+
+    response = s3_resource.ObjectSummary(bucket_name, object_key)
+    resp_obj = response.get()
+
+    return resp_obj['Metadata']
 
 
 def write_labels_to_dynamo(object_key, labels):
