@@ -10,6 +10,7 @@ import logging
 import logging.handlers
 import pytz
 import datetime
+import calendar
 from tail import follow
 
 
@@ -270,7 +271,9 @@ def push_file_to_s3(logger, app_config, s3_object_info, start_timing):
                                             s3_object_info['hour_string'] + '/' + \
                                             s3_object_info['img_type'] + '/' + \
                                             s3_object_info['just_file']
-    object_metadata = {'camera': s3_object_info['camera_name']}
+    utc_ts = parse_date_time_from_object_key(s3_object)
+    object_metadata = {'camera': s3_object_info['camera_name'],
+                       'camera_timestamp': utc_ts}
     s3_resource.Object(get_config_item(app_config, 's3_info.bucket_name'),
                        s3_object).put(Body=open(s3_object_info['file_name'], 'rb'),
                                       Metadata=object_metadata)
@@ -352,7 +355,6 @@ def parse_date_time_from_object_key(object_key):
     :param object_key:
     :return:
     """
-    pacific = pytz.timezone('America/Los_Angeles')
 
     first_parts = object_key.split("/")
     last_part_idx = len(first_parts) - 1
@@ -388,10 +390,28 @@ def parse_date_time_from_object_key(object_key):
     if day[:1] == '0':
         day = day[1:]
 
-    this_date = datetime.datetime(int(year), int(month), int(day), int(hour),
-                                  int(minutes), int(seconds), 0, pacific)
+    return convert_naive_local_to_utc_timestamp(year, month, day, hour, minutes, seconds)
 
-    return int((this_date.total_seconds() - datetime(1970, 1, 1, 0, 0, 0, 0)).total_seconds())
+
+def convert_naive_local_to_utc_timestamp(year, month, day, hour, minutes, seconds):
+    """
+    Converts a local naive date & time to a UTC Timestamp.
+    :param year:
+    :param month:
+    :param day:
+    :param hour:
+    :param minutes:
+    :param seconds:
+    :return:
+    """
+    pacific = pytz.timezone('America/Los_Angeles')
+    this_date = datetime.datetime(int(year), int(month), int(day), int(hour),
+                                  int(minutes), int(seconds))
+    local_dt = pacific.localize(this_date, is_dst=None)
+    utc_dt = local_dt.astimezone(pytz.utc)
+    timestamp = calendar.timegm(utc_dt.utctimetuple())
+    return timestamp
+
 
 if __name__ == "__main__":
     main()
