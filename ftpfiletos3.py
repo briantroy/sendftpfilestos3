@@ -357,7 +357,7 @@ def parse_date_time_from_object_key(object_key, camera_name, type):
     """
 
     if camera_name == 'garage' or camera_name == 'crawlspace':
-        return time.gmtime()
+        return int(time.time())
 
     first_parts = object_key.split("/")
     last_part_idx = len(first_parts) - 1
