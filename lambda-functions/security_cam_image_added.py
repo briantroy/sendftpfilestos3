@@ -45,13 +45,13 @@ def lambda_handler(event, context):
     img_table.put_item(Item=save_data)
     img_timeline_table.put_item(Item=save_data)
 
-    get_rekognition_labels(key, event_ts)
+    get_rekognition_labels(key, object_parts[2], event_ts)
 
     print("Processing for " + key + " completed in: " + str(time.time() - start_time) +
           " seconds.")
 
 
-def get_rekognition_labels(object_key, timestamp):
+def get_rekognition_labels(object_key, object_date, timestamp):
     """
     Gets the object rekognition labels for the image.
     :param object_key:
@@ -68,7 +68,7 @@ def get_rekognition_labels(object_key, timestamp):
 
     response = client.detect_labels(Image={'S3Object': request}, MaxLabels=10)
 
-    write_labels_to_dynamo(object_key, response, timestamp)
+    write_labels_to_dynamo(object_key, object_date, response, timestamp)
 
 
 def get_s3_metadata(object_key):
@@ -81,7 +81,7 @@ def get_s3_metadata(object_key):
     return resp_obj['Metadata']
 
 
-def write_labels_to_dynamo(object_key, labels, timestamp):
+def write_labels_to_dynamo(object_key, object_date, labels, timestamp):
     dyndb = boto3.resource('dynamodb')
     img_labels_table = dyndb.Table('security_alarm_image_label_set')
 
@@ -90,7 +90,8 @@ def write_labels_to_dynamo(object_key, labels, timestamp):
             'object_key': object_key,
             'label': label_item['Name'],
             'confidence': Decimal(str(label_item['Confidence'])),
-            'event_ts': int(timestamp)
+            'event_ts': int(timestamp),
+            'capture_date': object_date
             }
 
         img_labels_table.put_item(Item=save_data)
