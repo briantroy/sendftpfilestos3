@@ -1,0 +1,21 @@
+{
+  "neo4j": {
+    "host":"host-name-here",
+    "username": "neo4j-user",
+    "password": "my-super-secret-password"
+  },
+  "app_log_file": {
+    "file": "labels_to_graph.log",
+    "rotate_at_in_bytes": 5242880,
+    "number_of_old_logs_to_keep": 4,
+    "log_format": "%(asctime)s - %(levelname)s - %(thread)d - %(threadName)s - %(message)s"
+  },
+  "s3_checkpoint_info": {
+    "bucket_name": "my-s3-bucket",
+    "object_name": "object/path/for/checkpoint"
+  },
+  "items_per_batch": 2000, # limit clause of the dynamodb query/scan
+  "dynamodb_source_table": "source-table-with-label-data",
+  "dynamo_projection": "Projection to use on table - working set is: object_key, label, confidence, event_ts, capture_date"
+
+}

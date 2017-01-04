@@ -1,0 +1,21 @@
+{
+  "neo4j": {
+    "host":"roy-home-ub15-1.santan.brianandkelly.ws",
+    "username": "neo4j",
+    "password": "Is@b3l10"
+  },
+  "app_log_file": {
+    "file": "labels_to_graph.log",
+    "rotate_at_in_bytes": 5242880,
+    "number_of_old_logs_to_keep": 4,
+    "log_format": "%(asctime)s - %(levelname)s - %(thread)d - %(threadName)s - %(message)s"
+  },
+  "s3_checkpoint_info": {
+    "bucket_name": "security-alarms",
+    "object_name": "status/label_to_graph_checkpoint"
+  },
+  "items_per_batch": 2000,
+  "dynamodb_source_table": "security_alarm_image_label_set",
+  "dynamo_projection": "object_key, label, confidence, event_ts, capture_date"
+
+}
