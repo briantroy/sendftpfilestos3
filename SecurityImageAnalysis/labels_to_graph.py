@@ -20,33 +20,32 @@ def main():
     projection = get_config_item(app_config, "dynamo_projection")
 
     start_time = time.time()
-
-    checkpoint = fetch_checkpoint()
-    if checkpoint is None:
-        print "No checkpoint found in S3 - Loading entire set of Rekognition Labels in 20 seconds... " + \
-                        "Kill now to abort..."
-        app_logger.info("No checkpoint found in S3 - Loading entire set of Rekognition Labels in 20 seconds... "
-                        "Kill now to abort...")
-        time.sleep(1)
-        for i in range(1, 20):
-            print str(20-i)
-            time.sleep(1)
-        # End Wait For Loop
-        print "Starting full load!!!"
-        app_logger.info("Starting full load...")
-
-        get_full_scan_data(vid_table, projection)
-        checkpoint = get_scan_with_capture_date(vid_table, projection)
-
-    # FIN Full Load Condition
     while True:
+        checkpoint = fetch_checkpoint()
+        if checkpoint is None:
+            print "No checkpoint found in S3 - Loading entire set of Rekognition Labels in 20 seconds... " + \
+                            "Kill now to abort..."
+            app_logger.info("No checkpoint found in S3 - Loading entire set of Rekognition Labels in 20 seconds... "
+                            "Kill now to abort...")
+            time.sleep(1)
+            for i in range(1, 20):
+                print str(20-i)
+                time.sleep(1)
+            # End Wait For Loop
+            print "Starting full load!!!"
+            app_logger.info("Starting full load...")
+
+            get_full_scan_data(vid_table, projection)
+            checkpoint = get_scan_with_capture_date(vid_table, projection)
+
+        # FIN Full Load Condition
+
         app_logger.info("Processing from checkpoint - date: {} timestamp: {}".format(checkpoint['max_capture_date'],
                                                                                  checkpoint['max_timestamp']))
         get_query_items_since_checkpoint(checkpoint, vid_table, projection)
         app_logger.info("Run complete. Uptime: {} seconds".format((time.time() - start_time)))
         # pause for 5 minutes
         time.sleep(300)
-        checkpoint = fetch_checkpoint()
     # End While
 
 
@@ -120,6 +119,21 @@ def get_query_items_since_checkpoint(checkpoint, vid_table, projection):
     )
     app_logger.info("Processing batch {} in checkpoint load...".format(str(batch_number)))
     max_values = process_response_items(response, checkpoint)
+    # check to see if we have 0 images and we've crossed a day boundary
+    if len(response['Items']) == 0:
+        # check date vs. current date
+        ts_date = datetime.datetime.fromtimestamp(
+            int(max_values['max_timestamp'])
+        ).strftime('%Y-%m-%d')
+        now_date = datetime.datetime.now().strftime('%Y-%m-%d')
+
+        app_logger.info("Timestamp Date: {} - Current Date: {}".format(ts_date, now_date))
+        if ts_date != now_date:
+            app_logger.info("0 Records found and Timestamp Date: {} - does not equal the Current "
+                            "Date: {} updating checkpoint to current date.".format(ts_date, now_date))
+            max_values['max_capture_date'] = now_date
+        # FIN
+    # FIN
     s3.Object('security-alarms', 'status/label_to_graph_checkpoint').put(Body=json.dumps(max_values))
     while 'LastEvaluatedKey' in response:
         batch_number += 1
