@@ -272,6 +272,15 @@ def push_file_to_s3(logger, app_config, s3_object_info, start_timing):
                                             s3_object_info['img_type'] + '/' + \
                                             s3_object_info['just_file']
     utc_ts = parse_date_time_from_object_key(s3_object, s3_object_info['camera_name'], s3_object_info['img_type'])
+
+    # Sometimes the camera provides a date days in the future. Catch that and use the current timestamp
+    # when it occurs... look for timestamps more than 24 hours in the future
+    if utc_ts > (time.time() + 60*60*24):
+        logger.info("Camera Timestamp ({}) is too far in the future. Using current timestamp instead."
+                    .format(str(utc_ts)))
+        utc_ts = time.time()
+    # Fin
+
     object_metadata = {'camera': s3_object_info['camera_name'],
                        'camera_timestamp': str(utc_ts)}
     s3_resource.Object(get_config_item(app_config, 's3_info.bucket_name'),
