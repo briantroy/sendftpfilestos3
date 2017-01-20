@@ -246,6 +246,7 @@ def parse_upload_file_line(line, logger, app_config, is_test=False):
     if not is_test:
         push_file_to_s3(logger, app_config, s3_object_info, start_timing)
         put_file_info_on_sqs(s3_object_info, logger, app_config)
+        sys.exit(0)
     if not is_test:
         sys.exit(0)
 
@@ -261,7 +262,7 @@ def put_file_info_on_sqs(object_info, logger, app_config):
 
     # Get the queue
     queue = sqs.get_queue_by_name(QueueName='image_for_person_detection')
-
+    logger.info("Putting message: {} on queue.".format(json.dumps(object_info)))
     response = queue.send_message(MessageBody=json.dumps(object_info))
 
 
@@ -301,7 +302,6 @@ def push_file_to_s3(logger, app_config, s3_object_info, start_timing):
                                       Metadata=object_metadata)
     totaltime = time.time() - start_timing
     logger.info("S3 Object: {} written to s3 in {} seconds.".format(s3_object, totaltime))
-    sys.exit(0)
 # end push_file_to_s3
 
 
