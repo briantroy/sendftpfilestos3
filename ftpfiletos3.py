@@ -245,11 +245,24 @@ def parse_upload_file_line(line, logger, app_config, is_test=False):
 
     if not is_test:
         push_file_to_s3(logger, app_config, s3_object_info, start_timing)
+        put_file_info_on_sqs(s3_object_info, logger, app_config)
     if not is_test:
         sys.exit(0)
 
     return True
 # end parse_upload_file_line
+
+
+def put_file_info_on_sqs(object_info, logger, app_config):
+    # Get the service resource
+    import boto3
+    import json
+    sqs = boto3.resource('sqs')
+
+    # Get the queue
+    queue = sqs.get_queue_by_name(QueueName='image_for_person_detection')
+
+    response = queue.send_message(MessageBody=json.dumps(object_info))
 
 
 def push_file_to_s3(logger, app_config, s3_object_info, start_timing):
