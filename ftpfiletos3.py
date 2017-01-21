@@ -244,7 +244,7 @@ def parse_upload_file_line(line, logger, app_config, is_test=False):
     s3_object_info['camera_name'] = path_parts[1]
 
     if not is_test:
-        push_file_to_s3(logger, app_config, s3_object_info, start_timing)
+        s3_object_info['utc_ts'] = push_file_to_s3(logger, app_config, s3_object_info, start_timing)
         put_file_info_on_sqs(s3_object_info, logger, app_config)
         sys.exit(0)
     if not is_test:
@@ -289,7 +289,7 @@ def push_file_to_s3(logger, app_config, s3_object_info, start_timing):
 
     # Sometimes the camera provides a date days in the future. Catch that and use the current timestamp
     # when it occurs... look for timestamps more than 24 hours in the future
-    if utc_ts > (time.time() + 60*60*24):
+    if int(utc_ts) > (time.time() + 60*60*24):
         logger.info("Camera Timestamp ({}) is too far in the future. Using current timestamp instead."
                     .format(str(utc_ts)))
         utc_ts = time.time()
@@ -302,6 +302,7 @@ def push_file_to_s3(logger, app_config, s3_object_info, start_timing):
                                       Metadata=object_metadata)
     totaltime = time.time() - start_timing
     logger.info("S3 Object: {} written to s3 in {} seconds.".format(s3_object, totaltime))
+    return utc_ts
 # end push_file_to_s3
 
 

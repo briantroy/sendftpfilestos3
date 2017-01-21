@@ -204,7 +204,6 @@ def process_row_to_graph(object_key, label_name, confidence, event_ts=0):
 
         add_camera_node = 'MERGE(this_camera:Camera {camera_name: "' + camera_name + '"})'
         add_image_node = 'MERGE(this_image:Image {object_key: "' + object_key + \
-                         '", isodate: "' + date_info['isodate'] + \
                          '", timestamp: ' + str(event_ts) + '})'
         add_label_node = 'MERGE(this_label:Label {label_name: "' + label_name + '"})'
         add_isodate_node = 'MERGE(this_isodate:ISODate {iso_date: "' + date_info['isodate'] + '"})'
