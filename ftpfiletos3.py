@@ -258,12 +258,15 @@ def put_file_info_on_sqs(object_info, logger, app_config):
     # Get the service resource
     import boto3
     import json
-    sqs = boto3.resource('sqs')
 
-    # Get the queue
-    queue = sqs.get_queue_by_name(QueueName='image_for_person_detection')
-    logger.info("Putting message: {} on queue.".format(json.dumps(object_info)))
-    response = queue.send_message(MessageBody=json.dumps(object_info))
+    if object_info['img_type'] == 'snap':
+        sqs = boto3.resource('sqs')
+
+        # Get the queue
+        queue = sqs.get_queue_by_name(QueueName='image_for_person_detection')
+        logger.info("Putting message: {} on queue.".format(json.dumps(object_info)))
+        response = queue.send_message(MessageBody=json.dumps(object_info))
+    # Fin
 
 
 def push_file_to_s3(logger, app_config, s3_object_info, start_timing):
