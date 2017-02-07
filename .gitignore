@@ -4,3 +4,4 @@ static_code_analysis/*.html
 htmlcov
 .coverage
 testdata
+.idea/
