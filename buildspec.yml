@@ -8,7 +8,7 @@ phases:
   build: 
     commands: 
       - "echo Build started on `date`"
-      - run_tests_generate_html_coverage_report
+      - ./run_tests_generate_html_coverage_report
   install: 
     commands: 
       - "pip install pytz"
