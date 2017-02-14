@@ -1,7 +1,7 @@
 artifacts: 
   discard-paths: true
   files: 
-    - build_output/*
+    - build_output/**/*
 phases: 
   build: 
     commands: 
