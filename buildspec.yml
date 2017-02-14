@@ -20,7 +20,7 @@ phases:
   pre_build: 
     commands: 
       - "echo Pre Build phase started on `date`"
-      - "chomd +x static_code_analysis/*"
+      - "chmod +x static_code_analysis/*"
       - "chmod +x run_tests_generate_html_coverage_report"
       - static_code_analysis/pylint-ftpfiletos3
       - static_code_analysis/pylint-lambda-functions
