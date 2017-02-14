@@ -1,2 +1,2 @@
-pylint -f html ../ftpfiletos3.py > ftpfiletos3_lint.html
+pylint -f html ftpfiletos3.py > ftpfiletos3_lint.html
 exit 0
