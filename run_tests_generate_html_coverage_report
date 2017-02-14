@@ -1,3 +1,3 @@
 coverage run -m unittest unit_tests
-coverage html
+coverage html -d build_output/code_coverage/
 exit 0
