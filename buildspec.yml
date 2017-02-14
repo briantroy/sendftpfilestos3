@@ -20,6 +20,6 @@ phases:
   pre_build: 
     commands: 
       - "echo Pre Build phase started on `date`"
-      - static_code_analysis/pylint-ftpfilestos3
+      - static_code_analysis/pylint-ftpfiletos3
       - static_code_analysis/pylint-lambda-functions
 version: 0.1
