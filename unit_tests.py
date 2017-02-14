@@ -56,7 +56,7 @@ class TestFtpFileToS3(unittest.TestCase):
     # end test_pid_file_create
 
     def test_bad_pid_file_create(self):
-        this_config = {'app_pid_file': '/var/log/test.pid'}
+        this_config = {'app_pid_file': '/foo/bar/test.pid'}
         logger = logging.getLogger()
         output = ftpfiletos3.create_pid_file(this_config, logger)
         self.assertFalse(output)
