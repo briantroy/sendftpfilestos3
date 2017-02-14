@@ -1,26 +1,25 @@
-version: 0.1
-
-phases:
-  install:
-    commands:
-      - pip install pytz
-      - pip install pylint
-      - pip install coverage
-  pre_build:
-    commands:
-      - echo Pre Build phase started on `date`
-      - static_code_analysis/pylint-ftpfilestos3
-      - static_code_analysis/pylint-lambda-functions
-  build:
-    commands:
-      - echo Build started on `date`
-      - run_tests_generate_html_coverage_report
-  post_build:
-    commands:
-      - echo Build completed on `date`
-artifacts:
-  files:
+artifacts: 
+  discard-paths: true
+  files: 
     - html/**/*
     - ftpfiletos3_lint.html
     - lambda_functions_lint.html
-  discard-paths: yes
+phases: 
+  build: 
+    commands: 
+      - "echo Build started on `date`"
+      - run_tests_generate_html_coverage_report
+  install: 
+    commands: 
+      - "pip install pytz"
+      - "pip install pylint"
+      - "pip install coverage"
+  post_build: 
+    commands: 
+      - "echo Build completed on `date`"
+  pre_build: 
+    commands: 
+      - "echo Pre Build phase started on `date`"
+      - static_code_analysis/pylint-ftpfilestos3
+      - static_code_analysis/pylint-lambda-functions
+version: 0.1
