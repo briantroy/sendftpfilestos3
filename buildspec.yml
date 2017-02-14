@@ -1,5 +1,5 @@
 artifacts: 
-  discard-paths: true
+  discard-paths: no
   files: 
     - build_output/**/*
 phases: 
