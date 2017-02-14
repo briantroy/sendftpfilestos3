@@ -4,7 +4,7 @@
     "line_identifier": "STARTUP"
   },
   "app_log_file": {
-    "file": "/var/log/securitys3uploader.log",
+    "file": "/foo/bar/securitys3uploader.log",
     "rotate_at_in_bytes": 5242880,
     "number_of_old_logs_to_keep": 4,
     "log_format": "%(asctime)s - %(levelname)s - %(thread)d - %(threadName)s - %(message)s"
