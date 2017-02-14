@@ -1,7 +1,7 @@
 artifacts: 
   discard-paths: true
   files: 
-    - html/**/*
+    - htmlcov/**/*
     - ftpfiletos3_lint.html
     - lambda_functions_lint.html
 phases: 
