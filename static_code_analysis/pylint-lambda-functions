@@ -1,1 +1,2 @@
 pylint -f html lambda-functions/*.py > build_output/static_code_analysis/lambda_functions_lint.html
+exit 0
