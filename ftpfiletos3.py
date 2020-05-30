@@ -322,8 +322,8 @@ def transcodetomp4(file_in, logger):
 
     if os.path.isfile('/usr/bin/avconv'):
 
-        convert_command = '/usr/bin/avconv -i "{}" -f mp4 -vcodec copy -acodec '.format(file_in) + \
-                          'libfaac -b:a 112k -ac 2 -y "{}"'.format(file_out)
+        convert_command = 'su securityspy -c \"/usr/bin/avconv -i "{}" -f mp4 -vcodec copy -acodec '.format(file_in) + \
+                          'libfaac -b:a 112k -ac 2 -y "{}"'.format(file_out) + "\""
 
         try:
             subprocess.check_call(convert_command, shell=True)
