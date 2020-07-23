@@ -4,6 +4,7 @@ from __future__ import print_function
 import time
 import boto3
 from boto3.dynamodb.conditions import Key
+# import pprint
 
 
 def lambda_handler(event, context):
@@ -12,47 +13,91 @@ def lambda_handler(event, context):
 
     dyndb = boto3.resource('dynamodb')
 
+    # defaults:
+    num_results = 10
+    video_date = time.strftime('%Y-%m-%d')
+    start_key = ""
+    by_camera = False
+    older_than_ts = 0
+    newer_than_ts = 0
+    use_ts = 0
+
     if 'camera' in event['params']['path']:
-        camname = event['params']['path']['camera']
-        print("Request for camera video timeline - Camera: " + camname)
+        camera_name = event['params']['path']['camera']
+        key_condition = Key('camera_name').eq(camera_name)
+        # print("Request for camera video timeline - Camera: " + camera_name)
         vid_table = dyndb.Table('security_alarm_videos')
-        response = vid_table.query(
-            TableName="security_alarm_videos",
-            Select='ALL_ATTRIBUTES',
-            KeyConditionExpression=Key('camera_name').eq(camname),
-            ScanIndexForward=False,
-            Limit=5,
-        )
+        table_name = "security_alarm_videos"
+        select_attribs = 'ALL_ATTRIBUTES'
+        index_forward = False
+        by_camera = True
     else:
-
-        # Must be a video timeline request
-
-        # defaults:
-        num_results = 10
-        video_date = time.strftime('%Y-%m-%d')
-        # print(video_date)
-        print("Request for video timeline - Date: " + video_date)
-
-        if 'querystring' in event['params']:
-            if 'video_date' in event['params']['querystring']:
-                video_date = event['params']['querystring']['video_date']
-            # Fin
-            if 'num_results' in event['params']['querystring']:
-                num_results = int(event['params']['querystring']['num_results'])
-            # Fin
-        # Fin
-
-        # Execute the query
-
         vid_table = dyndb.Table('security_video_timeline')
-        response = vid_table.query(
-            TableName="security_video_timeline",
-            Select='ALL_ATTRIBUTES',
-            KeyConditionExpression=Key('capture_date').eq(video_date),
-            ScanIndexForward=False,
-            Limit=num_results,
-        )
+        table_name = "security_video_timeline"
+        select_attribs = 'ALL_ATTRIBUTES'
+        key_condition = Key('capture_date').eq(video_date)
+        index_forward = False
+        by_camera = False
     # Fin
+    if 'querystring' in event['params']:
+        if 'video_date' in event['params']['querystring']:
+            video_date = event['params']['querystring']['image_date']
+            key_condition = Key('capture_date').eq(video_date)
+        # Fin
+        if 'num_results' in event['params']['querystring']:
+            num_results = int(event['params']['querystring']['num_results'])
+        # Fin
+        if 'older_than_ts' in event['params']['querystring']:
+            older_than_ts = int(event['params']['querystring']['older_than_ts'])
+            use_ts = older_than_ts
+            index_forward = False
+        # Fin
+        if 'newer_than_ts' in event['params']['querystring']:
+            newer_than_ts = int(event['params']['querystring']['newer_than_ts'])
+            use_ts = newer_than_ts
+            index_forward = True
+        # Fin
+    # Fin
+
+    if by_camera:
+        if use_ts > 0:
+            start_key = {'camera_name': camera_name, 'event_ts': use_ts}
+            response = vid_table.query(
+                TableName=table_name,
+                Select=select_attribs,
+                KeyConditionExpression=key_condition,
+                ScanIndexForward=index_forward,
+                Limit=num_results,
+                ExclusiveStartKey=start_key,
+            )
+        else:
+            response = vid_table.query(
+                TableName=table_name,
+                Select=select_attribs,
+                KeyConditionExpression=key_condition,
+                ScanIndexForward=index_forward,
+                Limit=num_results,
+            )
+    else:
+        if use_ts > 0:
+            start_key = {'capture_date': video_date, 'event_ts': use_ts}
+            response = vid_table.query(
+                TableName=table_name,
+                Select=select_attribs,
+                KeyConditionExpression=key_condition,
+                ScanIndexForward=index_forward,
+                Limit=num_results,
+                ExclusiveStartKey=start_key,
+            )
+        else:
+            response = vid_table.query(
+                TableName=table_name,
+                Select=select_attribs,
+                KeyConditionExpression=key_condition,
+                ScanIndexForward=index_forward,
+                Limit=num_results,
+            )
+    # FIN
 
     return generate_signed_uri(response)
 
@@ -94,3 +139,16 @@ def generate_signed_uri(data):
     data['Items'] = new_items
 
     return data
+
+
+""" MOCK for Testing 
+mock_event = {'params': {}}
+mock_event['params']['path'] = {}
+mock_event['params']['path']['camera'] = 'drivewayc1'
+mock_event['params']['querystring'] = {}
+mock_event['params']['querystring']['older_than_ts'] = 1595518288
+
+output = lambda_handler(mock_event, "")
+pp = pprint.PrettyPrinter(indent=4)
+pp.pprint(output)
+"""
