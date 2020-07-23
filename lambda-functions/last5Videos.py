@@ -10,6 +10,7 @@ from boto3.dynamodb.conditions import Key
 def lambda_handler(event, context):
     """ Lambda Handler """
     # print(event)
+    print("Version: pagination version")
 
     dyndb = boto3.resource('dynamodb')
 
@@ -25,7 +26,7 @@ def lambda_handler(event, context):
     if 'camera' in event['params']['path']:
         camera_name = event['params']['path']['camera']
         key_condition = Key('camera_name').eq(camera_name)
-        # print("Request for camera video timeline - Camera: " + camera_name)
+        print("Request for camera video timeline - Camera: " + camera_name)
         vid_table = dyndb.Table('security_alarm_videos')
         table_name = "security_alarm_videos"
         select_attribs = 'ALL_ATTRIBUTES'
@@ -33,6 +34,7 @@ def lambda_handler(event, context):
         by_camera = True
     else:
         vid_table = dyndb.Table('security_video_timeline')
+        print("Request for camera video timeline: " + video_date)
         table_name = "security_video_timeline"
         select_attribs = 'ALL_ATTRIBUTES'
         key_condition = Key('capture_date').eq(video_date)
@@ -41,7 +43,7 @@ def lambda_handler(event, context):
     # Fin
     if 'querystring' in event['params']:
         if 'video_date' in event['params']['querystring']:
-            video_date = event['params']['querystring']['image_date']
+            video_date = event['params']['querystring']['video_date']
             key_condition = Key('capture_date').eq(video_date)
         # Fin
         if 'num_results' in event['params']['querystring']:
