@@ -76,7 +76,7 @@ def process_row_to_graph(s3_object_info, app_logger, app_config, start_timing):
     event_ts = s3_object_info['utc_ts']
 
     add_camera_node = 'MERGE(this_camera:Camera {camera_name: "' + s3_object_info['camera_name'] + '"})'
-    if s3_object_info['img_type'] == 'image':
+    if s3_object_info['img_type'] == 'snap':
         add_image_node = 'MERGE(this_image:Image {object_key: "' + object_key + \
                          '", timestamp: ' + str(event_ts) + '})'
     else:
@@ -466,6 +466,7 @@ def graph_parse_date_time_from_object_key(object_key):
     pacific = pytz.timezone('America/Los_Angeles')
 
     first_parts = object_key.split("/")
+    type = first_parts[4]
     last_part_idx = len(first_parts) - 1
     file_name = first_parts[last_part_idx]
 
