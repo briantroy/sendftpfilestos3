@@ -117,7 +117,9 @@ def process_row_to_graph(s3_object_info, app_logger, app_config, start_timing):
     tx.commit()
     neo_session.close()
     total_time = time.time() - start_timing
-    app_logger.info("S3 Object: {} information written to graph DB in {} seconds.".format(object_key, total_time))
+    app_logger.info("S3 Object: {} information written to graph DB in {} seconds using query: {}".format(object_key,
+                                                                                                         total_time,
+                                                                                                         full_query_list))
     return True
 
 
