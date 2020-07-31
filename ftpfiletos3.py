@@ -238,7 +238,8 @@ def read_log_file(logger, app_config, is_test=False):
 
     logger.info("STARTUP: Beginning trace of VSFTPD log file.")
     fstream = open(ftp_log_file, "rt")
-    fstream.seek(-64, 2)
+    fstream.seek(0, os.SEEK_END)  # seek to end of file; f.seek(0, 2) is legal
+    fstream.seek(fstream.tell() - 64, os.SEEK_SET)
     line_count = 1
     try:
         line_trigger = get_config_item(app_config, 'log_file_to_follow.line_identifier')
