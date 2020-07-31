@@ -12,6 +12,7 @@ import pytz
 import datetime
 import calendar
 from tail import follow
+from neo4j import GraphDatabase, basic_auth
 
 
 def main():
@@ -44,6 +45,90 @@ def main():
                      args=(app_logger, app_config, )).start()
 
 # end Main
+
+
+def process_row_to_graph(s3_object_info, app_logger, app_config, start_timing):
+    """
+    This function will write the object/file information to the graph database for later
+    analysis.
+
+    :param s3_object_info: The S3 Object Key information for the image/video
+    :param start_timing: Timestamp for start of processing for the log line
+    :param app_logger: The logging handler
+    :param app_config: The application config data
+    :return:
+    """
+
+    # Graph Server Connection Info
+    graph_server_host = get_config_item(app_config, "neo4j.host")
+    graph_server_user = get_config_item(app_config, "neo4j.username")
+    graph_server_pwd = get_config_item(app_config, "neo4j.password")
+    driver = GraphDatabase.driver("bolt://" + graph_server_host, auth=basic_auth(graph_server_user, graph_server_pwd))
+
+    object_key = get_config_item(app_config, 's3_info.object_base') + \
+                '/' + s3_object_info['camera_name'] + '/' + \
+                s3_object_info['date_string'] + '/' + \
+                s3_object_info['hour_string'] + '/' + \
+                s3_object_info['img_type'] + '/' + \
+                s3_object_info['just_file']
+
+    date_info = parse_date_time_from_object_key(object_key)
+    event_ts = s3_object_info['utc_ts']
+
+    add_camera_node = 'MERGE(this_camera:Camera {camera_name: "' + s3_object_info['camera_name'] + '"})'
+    if s3_object_info['img_type'] == 'image':
+        add_image_node = 'MERGE(this_image:Image {object_key: "' + object_key + \
+                         '", timestamp: ' + str(event_ts) + '})'
+    else:
+        add_image_node = 'MERGE(this_image:Video {object_key: "' + object_key + \
+                         '", timestamp: ' + str(event_ts) + '})'
+    add_isodate_node = 'MERGE(this_isodate:ISODate {iso_date: "' + date_info['isodate'] + '"})'
+    add_year_node = 'MERGE(this_year:Year {year_value: ' + date_info['year'] + '})'
+    add_month_node = 'MERGE(this_month:Month {month_value: ' + date_info['month'] + '})'
+    add_day_node = 'MERGE(this_day:Day {day_value: ' + date_info['day'] + '})'
+    add_hour_node = 'MERGE(this_hour:Hour {hour_value: ' + date_info['hour'] + '})'
+    relate_image_to_camera = 'MERGE (this_camera)-[:HAS_IMAGE {timestamp: ' + str(event_ts) + '}]->(this_image)'
+    relate_image_to_timestamp = 'MERGE (this_image)-[:HAS_TIMESTAMP]->(this_isodate)'
+    relate_image_to_year = 'MERGE (this_image)-[:HAS_YEAR]->(this_year)'
+    relate_image_to_month = 'MERGE (this_image)-[:HAS_MONTH]->(this_month)'
+    relate_image_to_day = 'MERGE (this_image)-[:HAS_DAY]->(this_day)'
+    relate_image_to_hour = 'MERGE (this_image)-[:HAS_HOUR]->(this_hour)'
+
+    full_query_list = add_camera_node + "\n" + \
+        add_image_node + "\n" + \
+        add_isodate_node + " " + \
+        add_year_node + " " + \
+        add_month_node + " " + \
+        add_day_node + " " + \
+        add_hour_node + " " + \
+        relate_image_to_camera + " " + \
+        relate_image_to_timestamp + " " + \
+        relate_image_to_year + " " + \
+        relate_image_to_month + " " + \
+        relate_image_to_day + " " + \
+        relate_image_to_hour
+
+    neo_session = driver.session()
+
+    tx = neo_session.begin_transaction()
+
+    tx.run(full_query_list)
+
+    tx.commit()
+    neo_session.close()
+    total_time = time.time() - start_timing
+    app_logger.info("S3 Object: {} information written to graph DB in {} seconds.".format(object_key, total_time))
+    return True
+
+
+def parse_camera_name_from_object_key(object_key):
+    """
+    Parses the camera name from the S3 Object Key
+    :param object_key: The S3 Object Key
+    :return: The camera name
+    """
+    first_parts = object_key.split("/")
+    return first_parts[1]
 
 
 def create_pid_file(app_config, app_logger):
@@ -245,6 +330,7 @@ def parse_upload_file_line(line, logger, app_config, is_test=False):
 
     if not is_test:
         s3_object_info['utc_ts'] = push_file_to_s3(logger, app_config, s3_object_info, start_timing)
+        process_row_to_graph(s3_object_info, logger, app_config, start_timing)
         put_file_info_on_sqs(s3_object_info, logger, app_config)
         sys.exit(0)
     if not is_test:
