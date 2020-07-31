@@ -12,7 +12,7 @@ import pytz
 import datetime
 import calendar
 from tail import follow
-from neo4j import GraphDatabase, basic_auth
+from neo4j.v1 import GraphDatabase, basic_auth
 
 
 def main():
@@ -72,7 +72,7 @@ def process_row_to_graph(s3_object_info, app_logger, app_config, start_timing):
                 s3_object_info['img_type'] + '/' + \
                 s3_object_info['just_file']
 
-    date_info = parse_date_time_from_object_key(object_key)
+    date_info = graph_parse_date_time_from_object_key(object_key)
     event_ts = s3_object_info['utc_ts']
 
     add_camera_node = 'MERGE(this_camera:Camera {camera_name: "' + s3_object_info['camera_name'] + '"})'
@@ -460,6 +460,55 @@ def get_config_item(app_config, item):
 
     return this_config
 # end get_config_item
+
+
+def graph_parse_date_time_from_object_key(object_key):
+    pacific = pytz.timezone('America/Los_Angeles')
+
+    first_parts = object_key.split("/")
+    last_part_idx = len(first_parts) - 1
+    file_name = first_parts[last_part_idx]
+
+    # now parse the date and time out of the file name
+    second_parts = file_name.split("_")
+    last_part_idx = len(second_parts) - 1
+    date_time_string = second_parts[last_part_idx]
+    if date_time_string.endswith('.jpg'):
+        date_time_string = date_time_string[:-4]
+
+    final_parts = date_time_string.split("-")
+    date_part = final_parts[0]
+    time_part = final_parts[1]
+
+    # parse out our date
+    year = date_part[:4]
+    date_part = date_part[4:]
+    month = date_part[:2]
+    day = date_part[2:]
+
+    # parse out the time
+    hour = time_part[:2]
+    time_part = time_part[2:]
+    seconds = time_part[2:]
+    minutes = time_part[:2]
+
+    if hour[:1] == '0':
+        hour = hour[1:]
+    if month[:1] == '0':
+        month = month[1:]
+    if day[:1] == '0':
+        day = day[1:]
+
+    this_date = datetime.datetime(int(year), int(month), int(day), int(hour),
+                                  int(minutes), int(seconds), 0, pacific)
+
+    return_dict = {'isodate': this_date.isoformat(),
+                   'year': year,
+                   'month': month,
+                   'day': day,
+                   'hour': hour}
+
+    return return_dict
 
 
 def parse_date_time_from_object_key(object_key, camera_name, type):
