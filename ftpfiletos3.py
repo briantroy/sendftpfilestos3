@@ -94,8 +94,8 @@ def process_row_to_graph(s3_object_info, app_logger, app_config, start_timing):
     relate_image_to_day = 'MERGE (this_image)-[:HAS_DAY]->(this_day)'
     relate_image_to_hour = 'MERGE (this_image)-[:HAS_HOUR]->(this_hour)'
 
-    full_query_list = add_camera_node + "\n" + \
-        add_image_node + "\n" + \
+    full_query_list = add_camera_node + " " + \
+        add_image_node + " " + \
         add_isodate_node + " " + \
         add_year_node + " " + \
         add_month_node + " " + \
