@@ -57,7 +57,7 @@ def create_pid_file(app_config, app_logger):
     pidfile = get_config_item(app_config, 'app_pid_file')
 
     if os.path.isfile(pidfile):
-        print "{} already exists, exiting".format(pidfile)
+        print("{} already exists, exiting".format(pidfile))
         app_logger.info("STARTUP: PID file exists... exiting...")
         return False
     try:
@@ -95,7 +95,7 @@ def logger_setup(app_config):
 
         app_logger.addHandler(handler)
     except IOError:
-        print "Can not open the log file: {}... exiting...".format(app_log_file)
+        print("Can not open the log file: {}... exiting...".format(app_log_file))
         return False
     # end try
 
@@ -118,7 +118,7 @@ def check_config_file():
         app_config = config_reader(default_config)
     # fin
     if not app_config:
-        print "Exiting due to invalid config file."
+        print("Exiting due to invalid config file.")
         return False
     # fin
     return app_config
@@ -350,7 +350,7 @@ def config_reader(config_file):
         # end with
         return app_config
     else:
-        print "The config file: {} does not exist, please try again.".format(config_file)
+        print("The config file: {} does not exist, please try again.".format(config_file))
         return False
     # fin
 
