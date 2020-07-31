@@ -472,13 +472,23 @@ def graph_parse_date_time_from_object_key(object_key):
     # now parse the date and time out of the file name
     second_parts = file_name.split("_")
     last_part_idx = len(second_parts) - 1
-    date_time_string = second_parts[last_part_idx]
-    if date_time_string.endswith('.jpg'):
-        date_time_string = date_time_string[:-4]
+    if type == 'snap':
+        date_time_string = second_parts[last_part_idx]
+        if date_time_string.endswith('.jpg'):
+            date_time_string = date_time_string[:-4]
+        # FIN
+        final_parts = date_time_string.split("-")
+        date_part = final_parts[0]
+        time_part = final_parts[1]
 
-    final_parts = date_time_string.split("-")
-    date_part = final_parts[0]
-    time_part = final_parts[1]
+        # FIN
+    # FIN
+    if type == 'record':
+        time_part = second_parts[last_part_idx]
+        date_part = second_parts[(last_part_idx - 1)]
+        if time_part.endswith('.mp4'):
+            time_part = time_part[:-4]
+    # FIN
 
     # parse out our date
     year = date_part[:4]
