@@ -375,7 +375,7 @@ def push_file_to_s3(logger, app_config, s3_object_info, start_timing):
                                             s3_object_info['hour_string'] + '/' + \
                                             s3_object_info['img_type'] + '/' + \
                                             s3_object_info['just_file']
-    utc_ts = parse_date_time_utc_timestamp(s3_object, s3_object_info['camera_name'], s3_object_info['img_type'])
+    utc_ts = parse_date_time_utc_timestamp(s3_object, s3_object_info['camera_name'])
 
     # Sometimes the camera provides a date days in the future. Catch that and use the current timestamp
     # when it occurs... look for timestamps more than 24 hours in the future
@@ -400,6 +400,7 @@ def transcodetomp4(file_in, logger):
     """ Transcodes our .mkv file to .mp4 prior to upload to s3
 
     :param file_in: The full path to the .mkv file.
+    :param logger: The application logger
     :return: The full path to the resulting .mp4 file
     """
 
@@ -463,20 +464,28 @@ def get_config_item(app_config, item):
 
 
 def parse_date_time_pacific(object_key):
+    """ Parses Pacific Time from Object Key
+        :param object_key: S3 Object Key
+        :return dict: date/time information
+    """
     return extract_date_info(object_key)
 
 
 def extract_date_info(object_key):
+    """ Extract date information from the S3 Object Key
+        :param object_key: The S3 Object Key
+        :return dict: Dictionary containing the date/time information
+    """
     pacific = pytz.timezone('America/Los_Angeles')
     first_parts = object_key.split("/")
-    type = first_parts[4]
+    capture_type = first_parts[4]
     last_part_idx = len(first_parts) - 1
     file_name = first_parts[last_part_idx]
 
     # now parse the date and time out of the file name
     second_parts = file_name.split("_")
     last_part_idx = len(second_parts) - 1
-    if type == 'snap':
+    if capture_type == 'snap':
         date_time_string = second_parts[last_part_idx]
         if date_time_string.endswith('.jpg'):
             date_time_string = date_time_string[:-4]
@@ -487,7 +496,7 @@ def extract_date_info(object_key):
 
         # FIN
     # FIN
-    if type == 'record':
+    if capture_type == 'record':
         time_part = second_parts[last_part_idx]
         date_part = second_parts[(last_part_idx - 1)]
         if time_part.endswith('.mp4'):
@@ -516,19 +525,20 @@ def extract_date_info(object_key):
     this_date = datetime.datetime(int(year), int(month), int(day), int(hour),
                                   int(minutes), int(seconds), 0, pacific)
     return_object = {'isodate': this_date.isoformat(),
-                   'year': year,
-                   'month': month,
-                   'day': day,
-                   'hour': hour,
-                   'minutes': minutes,
-                   'seconds': seconds}
+                     'year': year,
+                     'month': month,
+                     'day': day,
+                     'hour': hour,
+                     'minutes': minutes,
+                     'seconds': seconds}
     return return_object
 
 
-def parse_date_time_utc_timestamp(object_key, camera_name, type):
+def parse_date_time_utc_timestamp(object_key, camera_name):
     """
     Parses the time/date info from the file name and creates a UTC timestamp.
-    :param object_key:
+    :param object_key: The S3 Object Name
+    :param camera_name: The camera that captured the image/video
     :return:
     """
 
