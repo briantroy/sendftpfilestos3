@@ -72,7 +72,7 @@ def process_row_to_graph(s3_object_info, app_logger, app_config, start_timing):
                 s3_object_info['img_type'] + '/' + \
                 s3_object_info['just_file']
 
-    date_info = graph_parse_date_time_from_object_key(object_key)
+    date_info = parse_date_time_pacific(object_key)
     event_ts = s3_object_info['utc_ts']
 
     add_camera_node = 'MERGE(this_camera:Camera {camera_name: "' + s3_object_info['camera_name'] + '"})'
@@ -117,9 +117,7 @@ def process_row_to_graph(s3_object_info, app_logger, app_config, start_timing):
     tx.commit()
     neo_session.close()
     total_time = time.time() - start_timing
-    app_logger.info("S3 Object: {} information written to graph DB in {} seconds using query: {}".format(object_key,
-                                                                                                         total_time,
-                                                                                                         full_query_list))
+    app_logger.info("S3 Object: {} information written to graph DB in {} seconds.".format(object_key, total_time))
     return True
 
 
@@ -377,7 +375,7 @@ def push_file_to_s3(logger, app_config, s3_object_info, start_timing):
                                             s3_object_info['hour_string'] + '/' + \
                                             s3_object_info['img_type'] + '/' + \
                                             s3_object_info['just_file']
-    utc_ts = parse_date_time_from_object_key(s3_object, s3_object_info['camera_name'], s3_object_info['img_type'])
+    utc_ts = parse_date_time_utc_timestamp(s3_object, s3_object_info['camera_name'], s3_object_info['img_type'])
 
     # Sometimes the camera provides a date days in the future. Catch that and use the current timestamp
     # when it occurs... look for timestamps more than 24 hours in the future
@@ -464,9 +462,12 @@ def get_config_item(app_config, item):
 # end get_config_item
 
 
-def graph_parse_date_time_from_object_key(object_key):
-    pacific = pytz.timezone('America/Los_Angeles')
+def parse_date_time_pacific(object_key):
+    return extract_date_info(object_key)
 
+
+def extract_date_info(object_key):
+    pacific = pytz.timezone('America/Los_Angeles')
     first_parts = object_key.split("/")
     type = first_parts[4]
     last_part_idx = len(first_parts) - 1
@@ -514,17 +515,17 @@ def graph_parse_date_time_from_object_key(object_key):
 
     this_date = datetime.datetime(int(year), int(month), int(day), int(hour),
                                   int(minutes), int(seconds), 0, pacific)
-
-    return_dict = {'isodate': this_date.isoformat(),
+    return_object = {'isodate': this_date.isoformat(),
                    'year': year,
                    'month': month,
                    'day': day,
-                   'hour': hour}
+                   'hour': hour,
+                   'minutes': minutes,
+                   'seconds': seconds}
+    return return_object
 
-    return return_dict
 
-
-def parse_date_time_from_object_key(object_key, camera_name, type):
+def parse_date_time_utc_timestamp(object_key, camera_name, type):
     """
     Parses the time/date info from the file name and creates a UTC timestamp.
     :param object_key:
@@ -534,52 +535,14 @@ def parse_date_time_from_object_key(object_key, camera_name, type):
     if camera_name == 'garage' or camera_name == 'crawlspace':
         return int(time.time())
 
-    first_parts = object_key.split("/")
-    last_part_idx = len(first_parts) - 1
-    file_name = first_parts[last_part_idx]
+    date_time_info = extract_date_info(object_key)
 
-    # now parse the date and time out of the file name
-    second_parts = file_name.split("_")
-    last_part_idx = len(second_parts) - 1
-    if type == 'snap':
-        date_time_string = second_parts[last_part_idx]
-        if date_time_string.endswith('.jpg'):
-            date_time_string = date_time_string[:-4]
-        # FIN
-        final_parts = date_time_string.split("-")
-        date_part = final_parts[0]
-        time_part = final_parts[1]
-
-        # FIN
-    # FIN
-    if type == 'record':
-        time_part = second_parts[last_part_idx]
-        date_part = second_parts[(last_part_idx - 1)]
-        if time_part.endswith('.mp4'):
-            time_part = time_part[:-4]
-    # FIN
-
-
-    # parse out our date
-    year = date_part[:4]
-    date_part = date_part[4:]
-    month = date_part[:2]
-    day = date_part[2:]
-
-    # parse out the time
-    hour = time_part[:2]
-    time_part = time_part[2:]
-    seconds = time_part[2:]
-    minutes = time_part[:2]
-
-    if hour[:1] == '0':
-        hour = hour[1:]
-    if month[:1] == '0':
-        month = month[1:]
-    if day[:1] == '0':
-        day = day[1:]
-
-    return convert_naive_local_to_utc_timestamp(year, month, day, hour, minutes, seconds)
+    return convert_naive_local_to_utc_timestamp(date_time_info['year'],
+                                                date_time_info['month'],
+                                                date_time_info['day'],
+                                                date_time_info['hour'],
+                                                date_time_info['minutes'],
+                                                date_time_info['seconds'])
 
 
 def convert_naive_local_to_utc_timestamp(year, month, day, hour, minutes, seconds):
