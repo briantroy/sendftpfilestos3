@@ -87,12 +87,14 @@ def process_row_to_graph(s3_object_info, app_logger, app_config, start_timing):
     add_month_node = 'MERGE(this_month:Month {month_value: ' + date_info['month'] + '})'
     add_day_node = 'MERGE(this_day:Day {day_value: ' + date_info['day'] + '})'
     add_hour_node = 'MERGE(this_hour:Hour {hour_value: ' + date_info['hour'] + '})'
+    add_size_node = 'MERGE(this_size:Size {size_in_bytes: ' + s3_object_info['size_in_bytes'] + '})'
     relate_image_to_camera = 'MERGE (this_camera)-[:HAS_IMAGE {timestamp: ' + str(event_ts) + '}]->(this_image)'
     relate_image_to_timestamp = 'MERGE (this_image)-[:HAS_TIMESTAMP]->(this_isodate)'
     relate_image_to_year = 'MERGE (this_image)-[:HAS_YEAR]->(this_year)'
     relate_image_to_month = 'MERGE (this_image)-[:HAS_MONTH]->(this_month)'
     relate_image_to_day = 'MERGE (this_image)-[:HAS_DAY]->(this_day)'
     relate_image_to_hour = 'MERGE (this_image)-[:HAS_HOUR]->(this_hour)'
+    relate_image_to_size = 'MERGE (this_size)-[:HAS_SIZE]->(this_size)'
 
     full_query_list = add_camera_node + " " + \
         add_image_node + " " + \
@@ -101,11 +103,13 @@ def process_row_to_graph(s3_object_info, app_logger, app_config, start_timing):
         add_month_node + " " + \
         add_day_node + " " + \
         add_hour_node + " " + \
+        add_size_node + " " + \
         relate_image_to_camera + " " + \
         relate_image_to_timestamp + " " + \
         relate_image_to_year + " " + \
         relate_image_to_month + " " + \
         relate_image_to_day + " " + \
+        relate_image_to_size + " " + \
         relate_image_to_hour
 
     neo_session = driver.session()
@@ -292,6 +296,7 @@ def parse_upload_file_line(line, logger, app_config, is_test=False):
     s3_object_info['file_name'] = s3_object_info['file_name'].replace('"', '')
     logger.info("File for upload is: {} with file size: {}".
                 format(s3_object_info['file_name'], line_parts[2]))
+    s3_object_info['size_in_bytes'] = line_parts[2].replace('bytes', '').strip()
     if line_parts[2].find('Kbyte/sec') != -1:
         logger.info("Skippking file {} because it is empty.".format(s3_object_info['file_name']))
         if not is_test:
