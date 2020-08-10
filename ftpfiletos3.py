@@ -94,7 +94,7 @@ def process_row_to_graph(s3_object_info, app_logger, app_config, start_timing):
     relate_image_to_month = 'MERGE (this_image)-[:HAS_MONTH]->(this_month)'
     relate_image_to_day = 'MERGE (this_image)-[:HAS_DAY]->(this_day)'
     relate_image_to_hour = 'MERGE (this_image)-[:HAS_HOUR]->(this_hour)'
-    relate_image_to_size = 'MERGE (this_size)-[:HAS_SIZE]->(this_size)'
+    relate_image_to_size = 'MERGE (this_image)-[:HAS_SIZE]->(this_size)'
 
     full_query_list = add_camera_node + " " + \
         add_image_node + " " + \
