@@ -1,0 +1,10 @@
+[Unit]
+Description=Upload secuirty motion files (images and videos) to S3 and catalog them.
+
+[Service]
+Type=simple
+ExecStart=/usr/local/bin/ftpfiletos3.py /etc/ftpfiles2s3-vsftpd-config.json
+Restart=always
+
+[Install]
+WantedBy=multi-user.target

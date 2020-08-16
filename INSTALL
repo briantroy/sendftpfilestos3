@@ -1,0 +1,10 @@
+Install Instructions:
+
+Copy ftpfiletos3.service to /etc/systemd/system/ and symlink it into /etc/systemd/multi-user.target.wants/
+Copy restart-ftpfiletos3 to /usr/local/bin/
+Copy ftpfiletos3.py to /usr/local/bin/
+Copy tail.py to /usr/lib/python2.7/ 
+** NOTE: you can put this in /usr/local/lib/python2.7/site-packages if you prefer
+
+Copy vsftpd.logrotate.config /etc/logrotate.d/vsftpd 
+** NOTE: This config file restarts ftpfiletos3 when the vsftpd log is rotated.

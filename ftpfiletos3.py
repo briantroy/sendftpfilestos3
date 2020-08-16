@@ -1,3 +1,4 @@
+#! /usr/bin/env python
 """ Module reads a specified log file and uploads files found in that log file to s3.
     Designed for use with vsftpd logs.
 """
