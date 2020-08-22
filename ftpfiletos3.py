@@ -382,7 +382,7 @@ def push_file_to_s3(logger, app_config, s3_object_info, start_timing):
                                             s3_object_info['img_type'] + '/' + \
                                             s3_object_info['just_file']
 
-    utc_ts = int(time.time())
+    utc_ts = int(time.time() * 1000)
 
     object_metadata = {'camera': s3_object_info['camera_name'],
                        'camera_timestamp': str(utc_ts)}
