@@ -348,13 +348,13 @@ def parse_upload_file_line(line, logger, app_config, is_test=False):
 
 
 def get_camera_display_name(raw_name):
-    translation{'office': 'LaundryRoomDoor',
-                'DownDownC1': 'Kennel',
-                'Garage2-C1': 'Garage2',
-                'OtherCam': 'DownDown',
-                'drivewayc1': 'Deck2',
-                'entryway': 'WhiteRoomC1-2',
-                }
+    translation = {'office': 'LaundryRoomDoor',
+                   'DownDownC1': 'Kennel',
+                   'Garage2-C1': 'Garage2',
+                   'OtherCam': 'DownDown',
+                   'drivewayc1': 'Deck2',
+                   'entryway': 'WhiteRoomC1-2',
+                  }
     
     if raw_name in keys(translation):
         return translation[raw_name]
