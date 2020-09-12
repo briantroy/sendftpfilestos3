@@ -333,7 +333,7 @@ def parse_upload_file_line(line, logger, app_config, is_test=False):
             return True
         # fin
     # fin
-    s3_object_info['camera_name'] = path_parts[1]
+    s3_object_info['camera_name'] = get_camera_display_name(path_parts[1])
 
     if not is_test:
         s3_object_info['utc_ts'] = push_file_to_s3(logger, app_config, s3_object_info, start_timing)
@@ -345,6 +345,22 @@ def parse_upload_file_line(line, logger, app_config, is_test=False):
 
     return True
 # end parse_upload_file_line
+
+
+def get_camera_display_name(raw_name):
+    translation{'office': 'LaundryRoomDoor',
+                'DownDownC1': 'Kennel',
+                'Garage2-C1': 'Garage2',
+                'OtherCam': 'DownDown',
+                'drivewayc1': 'Deck2',
+                'entryway': 'WhiteRoomC1-2',
+                }
+    
+    if raw_name in keys(translation):
+        return translation[raw_name]
+    else:
+        return raw_name
+    #Fin
 
 
 def put_file_info_on_sqs(object_info, logger, app_config):
