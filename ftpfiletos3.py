@@ -356,7 +356,7 @@ def get_camera_display_name(raw_name):
                    'entryway': 'WhiteRoomC1-2',
                   }
     
-    if raw_name in keys(translation):
+    if raw_name in translation.keys():
         return translation[raw_name]
     else:
         return raw_name
