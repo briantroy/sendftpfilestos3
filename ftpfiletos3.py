@@ -249,22 +249,25 @@ def read_log_file(logger, app_config, is_test=False):
     line_count = 1
     try:
         line_trigger = get_config_item(app_config, 'log_file_to_follow.line_identifier')
-        for line in Pygtail(ftp_log_file):
-            if line_trigger in line:
-                thread_name = 'line-handler-' + str(line_count)
-                if not is_test:
-                    threading.Thread(name=thread_name, target=parse_upload_file_line,
-                                     args=(line, logger, app_config, )).start()
-                line_count += 1
-                if line_count % 10 == 0:
-                    logger.info("THREAD-STATUS: There are {} currently active threads."
-                                .format(threading.activeCount()))
+        while true:
+            for line in Pygtail(ftp_log_file):
+                if line_trigger in line:
+                    thread_name = 'line-handler-' + str(line_count)
+                    if not is_test:
+                        threading.Thread(name=thread_name, target=parse_upload_file_line,
+                                        args=(line, logger, app_config, )).start()
+                    line_count += 1
+                    if line_count % 10 == 0:
+                        logger.info("THREAD-STATUS: There are {} currently active threads."
+                                    .format(threading.activeCount()))
+                    # fin
+                    if is_test:
+                        return True
                 # fin
-                if is_test:
-                    return True
-            # fin
+            # end For
             sleep(1)
-last_part_idx
+        #End While
+        
     except KeyboardInterrupt:
         pass
 # end read_log_file
