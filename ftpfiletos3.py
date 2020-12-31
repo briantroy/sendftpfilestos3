@@ -13,7 +13,6 @@ import pytz
 import datetime
 import calendar
 import pygtail
-from tail import follow
 from neo4j.v1 import GraphDatabase, basic_auth
 
 
@@ -250,7 +249,7 @@ def read_log_file(logger, app_config, is_test=False):
     try:
         line_trigger = get_config_item(app_config, 'log_file_to_follow.line_identifier')
         while True:
-            for line in Pygtail(ftp_log_file):
+            for line in pygtail(ftp_log_file):
                 if line_trigger in line:
                     thread_name = 'line-handler-' + str(line_count)
                     if not is_test:
