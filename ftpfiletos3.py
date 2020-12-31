@@ -264,7 +264,6 @@ def read_log_file(logger, app_config, is_test=False):
                         return True
                 # fin
             # end For
-            time.sleep(1)
         #End While
 
     except KeyboardInterrupt:
