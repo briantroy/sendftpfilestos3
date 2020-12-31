@@ -249,7 +249,7 @@ def read_log_file(logger, app_config, is_test=False):
     line_count = 1
     try:
         line_trigger = get_config_item(app_config, 'log_file_to_follow.line_identifier')
-        while true:
+        while True:
             for line in Pygtail(ftp_log_file):
                 if line_trigger in line:
                     thread_name = 'line-handler-' + str(line_count)
@@ -267,7 +267,7 @@ def read_log_file(logger, app_config, is_test=False):
             # end For
             sleep(1)
         #End While
-        
+
     except KeyboardInterrupt:
         pass
 # end read_log_file
