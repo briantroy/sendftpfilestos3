@@ -11,17 +11,17 @@ def lambda_handler(event, context):
     :param context: Lambda Context
     :return:
     """
-    import urllib2
+    import urllib.request
     import json
 
     allowed_domain = "brianandkelly.ws"
 
-    print(event)
+    # print(event)
     # Get the user info from Google for the recieved token...
     id_token = event['authorizationToken']
     google_token_helper_uri = "https://www.googleapis.com/oauth2/v3/tokeninfo?id_token=" + id_token
 
-    result = json.loads(urllib2.urlopen(google_token_helper_uri).read())
+    result = json.loads(urllib.request.urlopen(google_token_helper_uri).read())
 
     domain = result['hd']
     user = result['sub']
@@ -29,6 +29,8 @@ def lambda_handler(event, context):
 
     if domain == allowed_domain:
         effect = 'Allow'
+        
+    print("Access request for user: " + result['email'] + " with effect: " + effect + " processed.")
 
     respond = {
         "principalId": user,
@@ -38,7 +40,7 @@ def lambda_handler(event, context):
                 {
                     "Action": "execute-api:Invoke",
                     "Effect": effect,
-                    "Resource": "arn:aws:execute-api:us-east-1:*:!!your api info!!*"
+                    "Resource": "arn:aws:execute-api:us-east-1:*:7k8o0sgjli/securityvideos/*"
                 }
             ]
         }

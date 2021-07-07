@@ -141,16 +141,3 @@ def generate_signed_uri(data):
     data['Items'] = new_items
 
     return data
-
-
-""" MOCK for Testing 
-mock_event = {'params': {}}
-mock_event['params']['path'] = {}
-mock_event['params']['path']['camera'] = 'drivewayc1'
-mock_event['params']['querystring'] = {}
-mock_event['params']['querystring']['older_than_ts'] = 1595518288
-
-output = lambda_handler(mock_event, "")
-pp = pprint.PrettyPrinter(indent=4)
-pp.pprint(output)
-"""

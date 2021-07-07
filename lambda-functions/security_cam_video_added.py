@@ -13,17 +13,17 @@ def lambda_handler(event, context):
     # print("Received event: " + json.dumps(event, indent=2))
     start_time = time.time()
     # Get the object from the event and show its content type
-    key = urllib.unquote_plus(event['Records'][0]['s3']['object']['key']).encode('utf8')
+    key = urllib.parse.unquote_plus(event['Records'][0]['s3']['object']['key']).encode('utf8')
     size = event['Records'][0]['s3']['object']['size']
-    print("Security Video: " + key + " with size: " + str(size) + " uploaded.")
+    print("Security Video: " + key.decode() + " with size: " + str(size) + " uploaded.")
     # print("Saving Data to DynamoDB")
-    object_parts = key.split("/")
+    object_parts = key.decode().split("/")
     camera_name = object_parts[1]
     # print("Camera Name: " + camera_name)
 
-    if "-small.mp4" not in key:
+    if "-small.mp4" not in key.decode():
 
-        small_vid_key = key.replace(".mp4", "-small.mp4")
+        small_vid_key = key.decode().replace(".mp4", "-small.mp4")
 
         if do_transcode:
             # Transcode the file for small screens:
@@ -31,7 +31,7 @@ def lambda_handler(event, context):
             transcoder.create_job(
                 PipelineId='1472321641566-68ryf2',
                 Input={
-                    'Key': key,
+                    'Key': key.decode(),
                     'FrameRate': 'auto',
                     'Resolution': 'auto',
                     'AspectRatio': 'auto',
@@ -44,12 +44,12 @@ def lambda_handler(event, context):
                 }]
             )
         else:
-            small_vid_key = key
+            small_vid_key = key.decode()
         # fin
 
         # Get Object Metadata
         event_ts = time.time()
-        obj_metadata = get_s3_metadata(key)
+        obj_metadata = get_s3_metadata(key.decode())
         if 'camera_timestamp' in obj_metadata:
             event_ts = obj_metadata['camera_timestamp']
             # FIN
@@ -64,17 +64,17 @@ def lambda_handler(event, context):
                      'capture_hour': object_parts[3],
                      'event_ts': int(event_ts),
                      's3_arrival_time': int(time.time()),
-                     'object_key': key,
+                     'object_key': key.decode(),
                      'object_key_small': small_vid_key
                     }
 
         vid_table.put_item(Item=save_data)
         vid_timeline_table.put_item(Item=save_data)
 
-        print("Processing for " + key + " completed in: " + str(time.time() - start_time) +
+        print("Processing for " + key.decode() + " completed in: " + str(time.time() - start_time) +
               " seconds.")
     else:
-        print("Processing for " + key + " skipped - this is our transcoded file.")
+        print("Processing for " + key.decode() + " skipped - this is our transcoded file.")
     # fin
 
 

@@ -5,7 +5,7 @@ def lambda_handler(event, context):
 
     s3_client = boto3.client('s3')
     items = s3_client.list_objects(Bucket='security-alarms', Prefix='patrolcams/', Delimiter='/')
-
+    print("Request for camera list.")
     out_list = []
     for obj in items.get('CommonPrefixes', []):
         camera = obj.get('Prefix')
