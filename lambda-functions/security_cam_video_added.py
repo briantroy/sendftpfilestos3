@@ -4,6 +4,7 @@ from __future__ import print_function
 import urllib
 import time
 import boto3
+import json
 
 
 def lambda_handler(event, context):
@@ -71,6 +72,12 @@ def lambda_handler(event, context):
         vid_table.put_item(Item=save_data)
         vid_timeline_table.put_item(Item=save_data)
 
+        # update camera metadata
+        camera_info = get_s3_camera_metadata()
+        camera_info['camera-last-video'][camera_name] = str(int(event_ts) / 1000)
+        put_s3_camera_metadata(camera_info)
+ 
+
         print("Processing for " + key.decode() + " completed in: " + str(time.time() - start_time) +
               " seconds.")
     else:
@@ -86,3 +93,20 @@ def get_s3_metadata(object_key):
     resp_obj = response.get()
 
     return resp_obj['Metadata']
+
+def get_s3_camera_metadata():
+    bucket_name = "security-alarms-metadata"
+    metadata_file = "camera-info.json"
+    s3_resource = boto3.resource('s3')
+
+    content_object = s3_resource.Object(bucket_name, metadata_file)
+    file_content = content_object.get()['Body'].read().decode('utf-8')
+    json_content = json.loads(file_content)
+    return json_content
+
+def put_s3_camera_metadata(camera_info):
+    bucket_name = "security-alarms-metadata"
+    metadata_file = "camera-info.json"
+    s3_resource = boto3.resource('s3')
+
+    s3_resource.Object(bucket_name, metadata_file).put(Body=json.dumps(camera_info))
