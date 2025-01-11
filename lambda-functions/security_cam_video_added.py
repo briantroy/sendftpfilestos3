@@ -74,7 +74,7 @@ def lambda_handler(event, context):
 
         # update camera metadata
         camera_info = get_s3_camera_metadata()
-        camera_info['camera-last-video'][camera_name] = str(int(event_ts) / 1000)
+        camera_info['camera-last-video'][camera_name] = str(int(int(event_ts) / 1000))
         put_s3_camera_metadata(camera_info)
  
 
