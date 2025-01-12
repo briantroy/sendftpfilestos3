@@ -4,6 +4,8 @@ from __future__ import print_function
 import time
 import boto3
 from boto3.dynamodb.conditions import Key
+from boto3.dynamodb.conditions import Attr
+
 # import pprint
 
 
@@ -61,6 +63,22 @@ def lambda_handler(event, context):
         # Fin
     # Fin
 
+    filter_expression = False
+    if 'filter' in event['params']['querystring']:
+        filter_name = event['params']['querystring']['filter']
+        # get camera metadata with filters
+        camera_metadata = get_s3_camera_metadata()
+        filter_list = camera_metadata['filters']
+        with filter_list[filter_name] as this_filter:
+            if this_filter['operator'] == 'contains':
+                filter_expression = Attr('camera_name').contains(this_filter['value'])
+            if this_filter['operator'] == 'not_contains':
+                filter_expression = ~Attr('camera_name').contains(this_filter['value'])
+            if this_filter['operator'] == 'in':
+                filter_expression = Attr('camera_name').is_in(this_filter['value'])
+        # get a lot of results... because filtering happens after the limit.
+        num_results = 200
+
     if by_camera:
         if use_ts > 0:
             start_key = {'camera_name': camera_name, 'event_ts': use_ts}
@@ -81,24 +99,49 @@ def lambda_handler(event, context):
                 Limit=num_results,
             )
     else:
-        if use_ts > 0:
-            start_key = {'capture_date': video_date, 'event_ts': use_ts}
-            response = vid_table.query(
-                TableName=table_name,
-                Select=select_attribs,
-                KeyConditionExpression=key_condition,
-                ScanIndexForward=index_forward,
-                Limit=num_results,
-                ExclusiveStartKey=start_key,
-            )
+        if filter_expression:
+            if use_ts > 0:
+                start_key = {'capture_date': video_date, 'event_ts': use_ts}
+                response = vid_table.query(
+                    TableName=table_name,
+                    Select=select_attribs,
+                    KeyConditionExpression=key_condition,
+                    FilterExpression=filter_expression,
+                    Limit=num_results,
+                    ScanIndexForward=index_forward,
+                    ExclusiveStartKey=start_key,
+                )
+            else:
+                response = vid_table.query(
+                    TableName=table_name,
+                    Select=select_attribs,
+                    KeyConditionExpression=key_condition,
+                    FilterExpression=filter_expression,
+                    Limit=num_results,
+                    ScanIndexForward=index_forward,
+                )
+            # FIN
         else:
-            response = vid_table.query(
-                TableName=table_name,
-                Select=select_attribs,
-                KeyConditionExpression=key_condition,
-                ScanIndexForward=index_forward,
-                Limit=num_results,
-            )
+            if use_ts > 0:
+                start_key = {'capture_date': video_date, 'event_ts': use_ts}
+                response = vid_table.query(
+                    TableName=table_name,
+                    Select=select_attribs,
+                    KeyConditionExpression=key_condition,
+                    ScanIndexForward=index_forward,
+                    Limit=num_results,
+                    ExclusiveStartKey=start_key,
+                )
+            else:
+                response = vid_table.query(
+                    TableName=table_name,
+                    Select=select_attribs,
+                    KeyConditionExpression=key_condition,
+                    ScanIndexForward=index_forward,
+                    Limit=num_results,
+                )
+            # FIN
+        # FIN
     # FIN
 
     return generate_signed_uri(response)
@@ -141,3 +184,15 @@ def generate_signed_uri(data):
     data['Items'] = new_items
 
     return data
+
+def get_s3_camera_metadata():
+    import boto3
+    import json
+    bucket_name = "security-alarms-metadata"
+    metadata_file = "camera-info.json"
+    s3_resource = boto3.resource('s3')
+
+    content_object = s3_resource.Object(bucket_name, metadata_file)
+    file_content = content_object.get()['Body'].read().decode('utf-8')
+    json_content = json.loads(file_content)
+    return json_content

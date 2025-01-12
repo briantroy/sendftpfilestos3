@@ -1,0 +1,91 @@
+{
+    "filters": {
+        "Dorothy Cameras": {
+            "operator": "contains",
+            "value": "Dorothy"
+        },
+        "Home Cameras": {
+            "operator": "not_contains",
+            "value": "Dorothy"
+        },
+        "Garage & Driveway": {
+            "operator": "in",
+            "value": ["Driveway",
+                        "GarageDoor",
+                        "GarageMini",
+                        "Garage2"
+                    ]     
+        },
+        "Front Door": {
+            "operator": "in",
+            "value": ["FrontGate",
+                        "FrontDeck",
+                        "Front_Door"
+                    ]
+        },
+        "Back Deck": {
+            "operator": "in",
+            "value": ["BackDeck",
+                        "BackDeckAbove",
+                        "MBR_Deck"
+                    ]
+        },
+        "Inside Cameras": {
+            "operator": "in",
+            "value": ["Livingroom",
+                        "NewPaxton",
+                        "CrawlSpace",
+                        "CrawlSpace2"
+                    ]
+        }
+    },
+    "camera-last-video": {
+        "878-062-757": "1735678267", 
+        "AboveGarage": "1727560470", 
+        "BackDeck": "1736638331", 
+        "BackDeckAbove": "1736638332", 
+        "Baltusrol": "1719425118", 
+        "CrawlSpace": "1736627299", 
+        "CrawlSpace2": "1736654218", 
+        "DorothyKitchen": "1736698825", 
+        "DorothyLivingroom": "1736665217", 
+        "Driveway": "1736700732", 
+        "FrontDeck": "1736701145", 
+        "FrontGate": "1736701142", 
+        "Front_Door": "1736701262", 
+        "G8V2-H601-3113-7NFK": "1699056773.292", 
+        "G8V2-H601-3155-3XBN": "1699056772.331", 
+        "Garage": "1714588100", 
+        "Garage2": "1736699546", 
+        "GarageDoor": "1736700729", 
+        "GarageMini": "1736697741", 
+        "Kitchen": "1699831362.118", 
+        "Livingroom": "1736687462", 
+        "MBR_Deck": "1736633886", 
+        "NewPaxton": "1735263171", 
+        "New_Front_Door": "1714586704", 
+        "Paxton": "1699816952.771", 
+        "UpperDeck": "1735678122"
+    }, 
+    "camera-list": [
+        "878-062-757", 
+        "AboveGarage", 
+        "BackDeck", 
+        "BackDeckAbove", 
+        "CrawlSpace", 
+        "CrawlSpace2",
+        "DorothyKitchen", 
+        "DorothyLivingroom", 
+        "Driveway", 
+        "FrontDeck", 
+        "FrontGate", 
+        "Front_Door", 
+        "Garage2", 
+        "GarageDoor", 
+        "GarageMini", 
+        "Livingroom", 
+        "MBR_Deck", 
+        "NewPaxton", 
+        "UpperDeck"
+    ]
+}
