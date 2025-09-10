@@ -6,11 +6,17 @@ import time
 import boto3
 import json
 
+# For thumbnail generation
+import os
+import tempfile
+import subprocess
+
 
 def lambda_handler(event, context):
     """ Lambda Handler """
 
     do_transcode = False
+
     # print("Received event: " + json.dumps(event, indent=2))
     start_time = time.time()
     # Get the object from the event and show its content type
@@ -21,7 +27,11 @@ def lambda_handler(event, context):
     object_parts = key.decode().split("/")
     camera_name = object_parts[1]
     # print("Camera Name: " + camera_name)
-
+    # Generate and upload thumbnail using ffmpeg
+    bucket_name = event['Records'][0]['s3']['bucket']['name']
+    video_key = key.decode()
+    thumbnail_object = ""
+    thumbnail_object = generate_and_upload_thumbnail_ffmpeg(bucket_name, video_key)
     if "-small.mp4" not in key.decode():
 
         small_vid_key = key.decode().replace(".mp4", "-small.mp4")
@@ -66,7 +76,8 @@ def lambda_handler(event, context):
                      'event_ts': int(event_ts),
                      's3_arrival_time': int(time.time()),
                      'object_key': key.decode(),
-                     'object_key_small': small_vid_key
+                     'object_key_small': small_vid_key,
+                     'thumbnail_key': thumbnail_object
                     }
 
         vid_table.put_item(Item=save_data)
@@ -76,13 +87,47 @@ def lambda_handler(event, context):
         camera_info = get_s3_camera_metadata()
         camera_info['camera-last-video'][camera_name] = str(int(int(event_ts) / 1000))
         put_s3_camera_metadata(camera_info)
- 
-
         print("Processing for " + key.decode() + " completed in: " + str(time.time() - start_time) +
               " seconds.")
     else:
         print("Processing for " + key.decode() + " skipped - this is our transcoded file.")
     # fin
+
+
+def generate_and_upload_thumbnail_ffmpeg(bucket_name, video_key):
+    """
+    Downloads the video from S3, generates a thumbnail from the first frame using ffmpeg,
+    and uploads it to the video-thumbnail/ folder in the same bucket.
+    """
+    s3 = boto3.client('s3')
+    thumb_key = None
+    with tempfile.TemporaryDirectory() as tmpdir:
+        video_filename = os.path.join(tmpdir, os.path.basename(video_key))
+        s3.download_file(bucket_name, video_key, video_filename)
+
+        # Generate thumbnail using ffmpeg (first frame)
+        thumb_filename = os.path.splitext(os.path.basename(video_key))[0] + '.jpg'
+        thumb_path = os.path.join(tmpdir, thumb_filename)
+        ffmpeg_cmd = [
+            'ffmpeg',
+            '-i', video_filename,
+            '-vf', 'thumbnail',
+            '-frames:v', '1',
+            thumb_path
+        ]
+        try:
+            subprocess.run(ffmpeg_cmd, check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        except subprocess.CalledProcessError as e:
+            print(f"ffmpeg failed: {e.stderr.decode()}")
+            return
+
+        # Upload thumbnail to S3 in video-thumbnail/ folder
+        thumb_key = f"video-thumbnail/{thumb_filename}"
+        s3.upload_file(thumb_path, bucket_name, thumb_key, ExtraArgs={'ContentType': 'image/jpeg'})
+        print(f"Thumbnail uploaded to {thumb_key}")
+
+    return thumb_key
+
 
 
 def get_s3_metadata(object_key):
