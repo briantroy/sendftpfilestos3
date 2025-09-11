@@ -68,14 +68,17 @@ def lambda_handler(event, context):
         filter_name = event['params']['querystring']['filter']
         # get camera metadata with filters
         camera_metadata = get_s3_camera_metadata()
+        print(filter_name)
+        print(camera_metadata['filters'])
+        this_filter = camera_metadata['filters'][filter_name]
         filter_list = camera_metadata['filters']
-        with filter_list[filter_name] as this_filter:
-            if this_filter['operator'] == 'contains':
-                filter_expression = Attr('camera_name').contains(this_filter['value'])
-            if this_filter['operator'] == 'not_contains':
-                filter_expression = ~Attr('camera_name').contains(this_filter['value'])
-            if this_filter['operator'] == 'in':
-                filter_expression = Attr('camera_name').is_in(this_filter['value'])
+    
+        if this_filter['operator'] == 'contains':
+            filter_expression = Attr('camera_name').contains(this_filter['value'])
+        if this_filter['operator'] == 'not_contains':
+            filter_expression = ~Attr('camera_name').contains(this_filter['value'])
+        if this_filter['operator'] == 'in':
+            filter_expression = Attr('camera_name').is_in(this_filter['value'])
         # get a lot of results... because filtering happens after the limit.
         num_results = 200
 
@@ -177,6 +180,15 @@ def generate_signed_uri(data):
             )
             item['uri_small_video'] = url
         # fin
+        if 'thumbnail_key' in item and item['thumbnail_key'] != "":
+            url = s3_client.generate_presigned_url(
+                ClientMethod='get_object',
+                Params={
+                    'Bucket': bucket,
+                    'Key': item['thumbnail_key']
+                }
+            )
+            item['thumbnail_uri'] = url
         new_items.append(item)
 
     # end for
