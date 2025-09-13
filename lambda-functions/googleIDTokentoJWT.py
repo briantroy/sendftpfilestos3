@@ -11,6 +11,21 @@ JWT_SECRET = os.environ["JWT_SECRET"]
 GOOGLE_ALLOWED_DOMAIN = os.environ.get("ALLOWED_DOMAIN", "brianandkelly.ws")
 
 def lambda_handler(event, context):
+    allowed_origins = [
+        "https://security-videos.brianandkelly.ws",
+        "https://sec-vid-dev.brianandkelly.ws",
+        "http://localhost:3000"
+    ]
+    origin = event.get('headers', {}).get('origin')
+    if origin in allowed_origins:
+        cors_headers = {
+            "Access-Control-Allow-Origin": origin,
+            "Access-Control-Allow-Credentials": "true",
+            "Access-Control-Allow-Headers": "Content-Type,Authorization",
+            "Access-Control-Allow-Methods": "GET,POST,OPTIONS"
+        }
+    else:
+        cors_headers = {}
     # Step 1: Read id_token from POST
     try:
         data = json.loads(event["body"])
@@ -52,26 +67,25 @@ def lambda_handler(event, context):
         f"Max-Age={10*24*60*60}"
     )
 
+    headers = {
+        "Set-Cookie": cookie,
+        "Content-Type": "application/json",
+        **cors_headers
+    }
     return {
         "statusCode": 200,
-        "headers": {
-            "Set-Cookie": cookie,
-            "Content-Type": "application/json",
-            # Add CORS if your frontend is on a different domain:
-            "Access-Control-Allow-Origin": "https://your-frontend.com",
-            "Access-Control-Allow-Credentials": "true"
-        },
+        "headers": headers,
         "body": json.dumps({"message": "Logged in"})
     }
 
-def _http_response(status, body):
+def _http_response(status, body, cors_headers=None):
+    headers = {
+        "Content-Type": "application/json"
+    }
+    if cors_headers:
+        headers.update(cors_headers)
     return {
         "statusCode": status,
-        "headers": {
-            "Content-Type": "application/json",
-            # And cors, if relevant:
-            "Access-Control-Allow-Origin": "https://your-frontend.com",
-            "Access-Control-Allow-Credentials": "true"
-        },
+        "headers": headers,
         "body": json.dumps(body)
     }
