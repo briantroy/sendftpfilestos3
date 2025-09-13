@@ -26,7 +26,14 @@ def lambda_handler(event, context):
     except Exception as e:
         return _http_response(401, {"error": "Invalid Google token"})
 
-    # Step 3: Create your own JWT (session token)
+
+    # Step 3: Restrict to users in 'brianandkelly.ws' domain using 'hd' claim
+    allowed_domain = "brianandkelly.ws"
+    hd_claim = idinfo.get("hd")
+    if hd_claim != allowed_domain:
+        return _http_response(403, {"error": f"Google account must be in domain {allowed_domain}"})
+
+    # Step 4: Create your own JWT (session token)
     payload = {
         "user_id": user_id,
         "email": email,
@@ -34,7 +41,7 @@ def lambda_handler(event, context):
     }
     session_token = jwt.encode(payload, JWT_SECRET, algorithm="HS256")
 
-    # Step 4: Return Set-Cookie header
+    # Step 5: Return Set-Cookie header
     cookie = (
         f"session_token={session_token}; "
         f"Path=/; "
