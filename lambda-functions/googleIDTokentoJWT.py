@@ -5,8 +5,10 @@ from datetime import datetime, timedelta
 from google.oauth2 import id_token as google_id_token
 from google.auth.transport import requests as google_requests
 
+
 GOOGLE_CLIENT_ID = os.environ["GOOGLE_CLIENT_ID"]
 JWT_SECRET = os.environ["JWT_SECRET"]
+GOOGLE_ALLOWED_DOMAIN = os.environ.get("ALLOWED_DOMAIN", "brianandkelly.ws")
 
 def lambda_handler(event, context):
     # Step 1: Read id_token from POST
@@ -27,11 +29,10 @@ def lambda_handler(event, context):
         return _http_response(401, {"error": "Invalid Google token"})
 
 
-    # Step 3: Restrict to users in 'brianandkelly.ws' domain using 'hd' claim
-    allowed_domain = "brianandkelly.ws"
+    # Step 3: Restrict to users in allowed domain using 'hd' claim
     hd_claim = idinfo.get("hd")
-    if hd_claim != allowed_domain:
-        return _http_response(403, {"error": f"Google account must be in domain {allowed_domain}"})
+    if hd_claim != GOOGLE_ALLOWED_DOMAIN:
+        return _http_response(403, {"error": f"Google account must be in domain {GOOGLE_ALLOWED_DOMAIN}"})
 
     # Step 4: Create your own JWT (session token)
     payload = {
