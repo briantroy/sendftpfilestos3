@@ -17,22 +17,34 @@ def lambda_handler(event, context):
         "http://localhost:3000"
     ]
     origin = event.get('headers', {}).get('origin')
+    print(origin)
     if origin in allowed_origins:
         cors_headers = {
             "Access-Control-Allow-Origin": origin,
             "Access-Control-Allow-Credentials": "true",
             "Access-Control-Allow-Headers": "Content-Type,Authorization",
-            "Access-Control-Allow-Methods": "GET,POST,OPTIONS"
+            "Access-Control-Allow-Methods": "GET,POST,OPTIONS",
+            "Vary": "Origin"
         }
     else:
-        cors_headers = {}
+        cors_headers = {
+            "Access-Control-Allow-Origin": "https://security-videos.brianandkelly.ws",
+            "Access-Control-Allow-Credentials": "true",
+            "Access-Control-Allow-Headers": "Content-Type,Authorization",
+            "Access-Control-Allow-Methods": "GET,POST,OPTIONS",
+            "Vary": "Origin"
+        }
     # Step 1: Read id_token from POST
+
+    print(cors_headers)
     try:
         data = json.loads(event["body"])
         id_token = data.get("id_token")
         if not id_token:
+            print("fail: Missing id_token")
             return _http_response(400, {"error": "Missing id_token"})
     except Exception as e:
+        print("fail: Invalid JSON")
         return _http_response(400, {"error": "Invalid JSON"})
 
     # Step 2: Verify Google id_token
@@ -41,6 +53,7 @@ def lambda_handler(event, context):
         user_id = idinfo["sub"]
         email = idinfo["email"]
     except Exception as e:
+        print("fail: invalid google token")
         return _http_response(401, {"error": "Invalid Google token"})
 
 
@@ -79,6 +92,7 @@ def lambda_handler(event, context):
     }
 
 def _http_response(status, body, cors_headers=None):
+    print("In _http_response")
     headers = {
         "Content-Type": "application/json"
     }
