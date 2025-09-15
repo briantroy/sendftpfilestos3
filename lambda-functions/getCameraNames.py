@@ -5,9 +5,11 @@ def lambda_handler(event, context):
     import time
     import json
 
+    start_time = time.time()
     days_since_last_video = 120
 
     camera_list = get_s3_camera_metadata()
+    print("Camrea List retrieved from S3 in:--- %s seconds ---" % (time.time() - start_time))
     out_list = []
 
     for camera in camera_list['camera-last-video']:
@@ -16,7 +18,13 @@ def lambda_handler(event, context):
         # end If
     # end for
 
-    return out_list
+    return_obj = {
+        "cameras": out_list,
+        "filters": camera_list['filters']
+
+    }
+
+    return return_obj
 
 def get_s3_camera_metadata():
     import boto3

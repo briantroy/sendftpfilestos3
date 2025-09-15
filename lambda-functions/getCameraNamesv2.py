@@ -39,9 +39,11 @@ def lambda_handler(event, context):
             'body': ''
         }
 
+    start_time = time.time()
     days_since_last_video = 120
 
     camera_list = get_s3_camera_metadata()
+    print("Camrea List retrieved from S3 in:--- %s seconds ---" % (time.time() - start_time))
     out_list = []
 
     for camera in camera_list['camera-last-video']:
@@ -49,6 +51,12 @@ def lambda_handler(event, context):
             out_list.append(camera)
         # end If
     # end for
+
+    return_obj = {
+        "cameras": out_list,
+        "filters": camera_list['filters']
+
+    }
 
     return {
         'statusCode': 200,

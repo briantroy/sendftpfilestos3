@@ -3,8 +3,10 @@ from __future__ import print_function
 
 import time
 import boto3
+import json
 from boto3.dynamodb.conditions import Key
 from boto3.dynamodb.conditions import Attr
+from decimal import Decimal
 
 # import pprint
 
@@ -62,8 +64,10 @@ def lambda_handler(event, context):
     newer_than_ts = 0
     use_ts = 0
 
-    if 'camera' in event['params']['path']:
-        camera_name = event['params']['path']['camera']
+    mvqsp = event.get('multiValueQueryStringParameters') or {}
+    path_params = mvqsp.get('pathParameters') or {}
+    if path_params and ('camera' in path_params):
+        camera_name = path_params['camera']
         key_condition = Key('camera_name').eq(camera_name)
         print("Request for camera video timeline - Camera: " + camera_name)
         vid_table = dyndb.Table('security_alarm_videos')
@@ -80,36 +84,32 @@ def lambda_handler(event, context):
         index_forward = False
         by_camera = False
     # Fin
-    if 'querystring' in event['params']:
-        if 'video_date' in event['params']['querystring']:
-            video_date = event['params']['querystring']['video_date']
+    qs_params = event.get('queryStringParameters') or {}
+    if qs_params:
+        if 'video_date' in qs_params:
+            video_date = qs_params['video_date']
             key_condition = Key('capture_date').eq(video_date)
-        # Fin
-        if 'num_results' in event['params']['querystring']:
-            num_results = int(event['params']['querystring']['num_results'])
-        # Fin
-        if 'older_than_ts' in event['params']['querystring']:
-            older_than_ts = int(event['params']['querystring']['older_than_ts'])
+        if 'num_results' in qs_params:
+            num_results = int(qs_params['num_results'])
+        if 'older_than_ts' in qs_params:
+            older_than_ts = int(qs_params['older_than_ts'])
             use_ts = older_than_ts
             index_forward = False
-        # Fin
-        if 'newer_than_ts' in event['params']['querystring']:
-            newer_than_ts = int(event['params']['querystring']['newer_than_ts'])
+        if 'newer_than_ts' in qs_params:
+            newer_than_ts = int(qs_params['newer_than_ts'])
             use_ts = newer_than_ts
             index_forward = True
-        # Fin
-    # Fin
 
     filter_expression = False
-    if 'filter' in event['params']['querystring']:
-        filter_name = event['params']['querystring']['filter']
+    if qs_params and 'filter' in qs_params:
+        filter_name = qs_params['filter']
         # get camera metadata with filters
         camera_metadata = get_s3_camera_metadata()
         print(filter_name)
         print(camera_metadata['filters'])
         this_filter = camera_metadata['filters'][filter_name]
         filter_list = camera_metadata['filters']
-    
+
         if this_filter['operator'] == 'contains':
             filter_expression = Attr('camera_name').contains(this_filter['value'])
         if this_filter['operator'] == 'not_contains':
@@ -184,10 +184,12 @@ def lambda_handler(event, context):
         # FIN
     # FIN
 
+    output = generate_signed_uri(response)
+    
     return {
         'statusCode': 200,
         'headers': cors_headers,
-        'body': generate_signed_uri
+        'body': json.dumps(output, default=int)
     }
 
 
