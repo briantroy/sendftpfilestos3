@@ -64,8 +64,7 @@ def lambda_handler(event, context):
     newer_than_ts = 0
     use_ts = 0
 
-    mvqsp = event.get('multiValueQueryStringParameters') or {}
-    path_params = mvqsp.get('pathParameters') or {}
+    path_params = event.get('pathParameters') or {}
     if path_params and ('camera' in path_params):
         camera_name = path_params['camera']
         key_condition = Key('camera_name').eq(camera_name)

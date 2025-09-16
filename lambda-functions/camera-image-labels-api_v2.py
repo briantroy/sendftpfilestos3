@@ -49,6 +49,7 @@ def lambda_handler(event, context):
     ]
     origin = event.get('headers', {}).get('origin')
     if origin in allowed_origins:
+        print("Origin allowed: " + str(origin)) 
         cors_headers = {
             "Access-Control-Allow-Origin": origin,
             "Access-Control-Allow-Credentials": "true",
@@ -56,6 +57,7 @@ def lambda_handler(event, context):
             "Access-Control-Allow-Methods": "GET,POST,OPTIONS"
         }
     else:
+        print("Origin not allowed: " + str(origin))
         cors_headers = {}
 
     return {
