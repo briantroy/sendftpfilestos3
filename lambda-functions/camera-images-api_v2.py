@@ -1,68 +1,84 @@
-""" API endpoint handler to load videos """
+""" API endpoint handler to load images """
 from __future__ import print_function
 
 import time
 import boto3
+import json
 from boto3.dynamodb.conditions import Key
+from decimal import Decimal
 
+class DecimalEncoder(json.JSONEncoder):
+    """Helper class to convert DynamoDB Decimals to int/float for JSON serialization."""
+    def default(self, obj):
+        if isinstance(obj, Decimal):
+            # Convert to int if possible, else float
+            if obj % 1 == 0:
+                return int(obj)
+            else:
+                return float(obj)
+        return super(DecimalEncoder, self).default(obj)
 
 def lambda_handler(event, context):
-    """ Lambda Handler """
-    # print(event)
+    """ Lambda Handler for API Gateway Proxy Integration """
 
     dyndb = boto3.resource('dynamodb')
 
-    image_date = None
-    num_results = 10
-    older_than_ts = None
-    newer_than_ts = None
-    camera_name = None
+    # Parse query string and path parameters safely
+    query = event.get('queryStringParameters') or {}
+    path = event.get('pathParameters') or {}
 
-    if 'querystring' in event['params']:
-        if 'image_date' in event['params']['querystring']:
-            image_date = event['params']['querystring']['image_date']
-        # Fin
-        if 'num_results' in event['params']['querystring']:
-            num_results = int(event['params']['querystring']['num_results'])
-        # Fin
-        if 'older_than_ts' in event['params']['querystring']:
-            older_than_ts = int(event['params']['querystring']['older_than_ts'])
-        # Fin
-        if 'newer_than_ts' in event['params']['querystring']:
-            newer_than_ts = int(event['params']['querystring']['newer_than_ts'])
-            # Fin
-    # Fin
-    if 'camera' in event['params']['path']:
-        camera_name = event['params']['path']['camera']
-    # Fin
+    image_date = query.get('image_date')
+    num_results = int(query.get('num_results', 10))
+    older_than_ts = query.get('older_than_ts')
+    newer_than_ts = query.get('newer_than_ts')
+    camera_name = path.get('camera')
 
-    if camera_name is not None:
+    if older_than_ts is not None:
+        try:
+            older_than_ts = int(older_than_ts)
+        except ValueError:
+            older_than_ts = None
+    if newer_than_ts is not None:
+        try:
+            newer_than_ts = int(newer_than_ts)
+        except ValueError:
+            newer_than_ts = None
+
+    if camera_name:
         print("Request for camera image timeline - Camera: " + camera_name)
     else:
-        # Must be a image timeline request
-
-        # defaults:
         if image_date is None:
             image_date = time.strftime('%Y-%m-%d')
-        # Fin
-
         print("Request for image timeline - Date: " + image_date)
-    # Fin
 
     response = execute_dynamo_query(image_date, num_results, older_than_ts, newer_than_ts, camera_name)
+    enriched = enrich_image_data(response)
 
-    return enrich_image_data(response)
+    # CORS headers (customize as needed)
+    allowed_origins = [
+        "https://security-videos.brianandkelly.ws",
+        "https://sec-vid-dev.brianandkelly.ws",
+        "http://localhost:3000"
+    ]
+    origin = event.get('headers', {}).get('origin')
+    if origin in allowed_origins:
+        cors_headers = {
+            "Access-Control-Allow-Origin": origin,
+            "Access-Control-Allow-Credentials": "true",
+            "Access-Control-Allow-Headers": "Content-Type,Authorization",
+            "Access-Control-Allow-Methods": "GET,POST,OPTIONS"
+        }
+    else:
+        cors_headers = {}
 
+    return {
+        "statusCode": 200,
+        "headers": cors_headers,
+        "body": json.dumps(enriched, cls=DecimalEncoder)
+    }
 
 def execute_dynamo_query(image_date, num_results, older_than_ts, newer_than_ts, camera_name):
-    """ Generates the correct DynamoDB Query based on input and returns the result.
-
-    :param image_date:
-    :param num_results:
-    :param older_than_ts:
-    :param newer_than_ts:
-    :return:
-    """
+    """ Generates the correct DynamoDB Query based on input and returns the result. """
 
     dyndb = boto3.resource('dynamodb')
     response = None
@@ -101,9 +117,6 @@ def execute_dynamo_query(image_date, num_results, older_than_ts, newer_than_ts, 
                     ExclusiveStartKey={'camera_name': camera_name, 'event_ts': newer_than_ts},
                 )
                 return response
-            # Fin
-        # Fin
-    # Fin
 
     if camera_name is None and image_date is not None:
         # Timeline request without regard for camera
@@ -137,18 +150,11 @@ def execute_dynamo_query(image_date, num_results, older_than_ts, newer_than_ts, 
                     ExclusiveStartKey={'capture_date': image_date, 'event_ts': newer_than_ts},
                 )
                 return response
-            # Fin
-        # Fin
 
     return response
 
-
 def generate_signed_uri(item):
-    """ Generates signed URIs for the videos - allowing app to load them.
-
-    :param data: List of videos for which signed URIs will be generated.
-    :return: The updated data with signed URIs
-    """
+    """ Generates signed URIs for the videos - allowing app to load them. """
 
     s3_client = boto3.client('s3')
     bucket = "security-alarms"
@@ -163,14 +169,8 @@ def generate_signed_uri(item):
 
     return url
 
-
 def get_image_label(object_key):
-    """
-    Gets the image labels for an image.
-
-    :param object_key:
-    :return:
-    """
+    """ Gets the image labels for an image. """
     dyndb = boto3.resource('dynamodb')
 
     label_table = dyndb.Table('security_alarm_image_label_set')
@@ -183,13 +183,8 @@ def get_image_label(object_key):
 
     return response['Items']
 
-
 def enrich_image_data(data):
-    """
-    Enriches the image data as needed.
-    :param data:
-    :return:
-    """
+    """ Enriches the image data as needed. """
     new_items = []
     for item in data['Items']:
         item['uri'] = generate_signed_uri(item)
