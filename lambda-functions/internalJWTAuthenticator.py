@@ -21,8 +21,8 @@ def lambda_handler(event, context):
     cookie_string = headers.get('cookie') or headers.get('Cookie') # case-insensitive
     token = None
     if cookie_string:
-        print(f"Got Cookie: {cookie_string}")
-        # token = get_cookie_value(cookie_string, 'session_token')
+        # print(f"Got Cookie: {cookie_string}")
+        token = get_cookie_value(cookie_string, 'session_token')
         if token:
             print("Found session_token in cookie")
             token = unquote(token)
