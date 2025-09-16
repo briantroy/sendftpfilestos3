@@ -61,7 +61,7 @@ def lambda_handler(event, context):
     return {
         'statusCode': 200,
         'headers': cors_headers,
-        'body': out_list
+        'body': json.dumps(return_obj)
     }
 
 def get_s3_camera_metadata():

@@ -17,8 +17,9 @@ def lambda_handler(event, context):
         "http://localhost:3000"
     ]
     origin = event.get('headers', {}).get('origin')
-    print(origin)
+    
     if origin in allowed_origins:
+        print("Origin allowed: ", origin)
         cors_headers = {
             "Access-Control-Allow-Origin": origin,
             "Access-Control-Allow-Credentials": "true",
@@ -27,6 +28,7 @@ def lambda_handler(event, context):
             "Vary": "Origin"
         }
     else:
+        print("Origin not allowed: ", origin)
         cors_headers = {
             "Access-Control-Allow-Origin": "https://security-videos.brianandkelly.ws",
             "Access-Control-Allow-Credentials": "true",
@@ -69,6 +71,7 @@ def lambda_handler(event, context):
         "exp": datetime.utcnow() + timedelta(days=10)
     }
     session_token = jwt.encode(payload, JWT_SECRET, algorithm="HS256")
+    print("session_token: ", session_token)
 
     # Step 5: Return Set-Cookie header
     cookie = (
@@ -76,7 +79,7 @@ def lambda_handler(event, context):
         f"Path=/; "
         f"HttpOnly; "
         f"Secure; "
-        f"SameSite=Lax; "
+        f"SameSite=None; "
         f"Max-Age={10*24*60*60}"
     )
 
