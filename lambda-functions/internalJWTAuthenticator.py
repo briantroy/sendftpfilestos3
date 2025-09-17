@@ -21,20 +21,13 @@ def lambda_handler(event, context):
     cookie_string = headers.get('cookie') or headers.get('Cookie') # case-insensitive
     token = None
     if cookie_string:
-        # print(f"Got Cookie: {cookie_string}")
         token = get_cookie_value(cookie_string, 'session_token')
         if token:
             print("Found session_token in cookie")
             token = unquote(token)
-        else:
-            ## the cookie only contains the token
-            token = cookie_string
-            token = unquote(token)
-    else: 
-        print("No cookie found in headers")
+        else: 
+            token = unquote(cookie_string)
     
-    print(f"token: {token}")    
-    print(f"cookie: {cookie_string}")
     principal_id = "anonymous"
     effect = "Deny"
     policy_context = {}
@@ -49,6 +42,9 @@ def lambda_handler(event, context):
             pass # expired, effect remains Deny
         except Exception:
             pass
+    else:
+        print("No session_token found in cookie")
+
 
     print(f"EFFECT: principal_id: {principal_id}, effect: {effect}")
 
