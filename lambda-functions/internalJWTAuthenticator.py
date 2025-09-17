@@ -7,11 +7,14 @@ JWT_ALG = "HS256"
 
 def get_cookie_value(cookie_header, cookie_name):
     if not cookie_header:
+        print("No cookie header found")
         return None
     cookies = cookie_header.split(';')
+    print("Cookies: ", cookies)
     for cookie in cookies:
         name, _, value = cookie.strip().partition('=')
         if name == cookie_name:
+            print(f"Found cookie: {name}={value}")  
             return value
     return None
 
@@ -19,13 +22,15 @@ def lambda_handler(event, context):
     # 1. Get cookies from headers
     headers = event['headers'] or {}
     cookie_string = headers.get('cookie') or headers.get('Cookie') # case-insensitive
+    print
     token = None
     if cookie_string:
         token = get_cookie_value(cookie_string, 'session_token')
         if token:
             print("Found session_token in cookie")
             token = unquote(token)
-        else: 
+        else:
+            print("session_token cookie not found") 
             token = unquote(cookie_string)
     
     principal_id = "anonymous"
@@ -35,15 +40,16 @@ def lambda_handler(event, context):
     if token:
         try:
             payload = jwt.decode(token, JWT_SECRET, algorithms=[JWT_ALG])
+            print("Good Token, JWT payload:", payload)
             principal_id = payload['user_id']
             effect = "Allow"
             policy_context = {'user_id': principal_id}
         except jwt.ExpiredSignatureError:
+            print
             pass # expired, effect remains Deny
-        except Exception:
+        except Exception as e:
+            print("Invalid token; could not decode: ", e)
             pass
-    else:
-        print("No session_token found in cookie")
 
 
     print(f"EFFECT: principal_id: {principal_id}, effect: {effect}")
