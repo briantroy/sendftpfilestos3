@@ -54,6 +54,8 @@ def lambda_handler(event, context):
         idinfo = google_id_token.verify_oauth2_token(id_token, google_requests.Request(), GOOGLE_CLIENT_ID)
         user_id = idinfo["sub"]
         email = idinfo["email"]
+        picture = idinfo["picture"]
+        username = idinfo["name"]
     except Exception as e:
         print("fail: invalid google token")
         return _http_response(401, {"error": "Invalid Google token"})
@@ -68,6 +70,8 @@ def lambda_handler(event, context):
     payload = {
         "user_id": user_id,
         "email": email,
+        "picture": picture,
+        "username": username,  
         "exp": datetime.utcnow() + timedelta(days=10)
     }
     session_token = jwt.encode(payload, JWT_SECRET, algorithm="HS256")
@@ -82,7 +86,12 @@ def lambda_handler(event, context):
         f"SameSite=None; "
         f"Max-Age={10*24*60*60}"
     )
-
+    output = {
+        "user_id": user_id,
+        "email": email,
+        "picture": picture,
+        "username": username
+    }
     headers = {
         "Set-Cookie": cookie,
         "Content-Type": "application/json",
@@ -91,7 +100,7 @@ def lambda_handler(event, context):
     return {
         "statusCode": 200,
         "headers": headers,
-        "body": json.dumps({"message": "Logged in"})
+        "body": json.dumps(output)
     }
 
 def _http_response(status, body, cors_headers=None):
