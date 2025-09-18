@@ -127,12 +127,19 @@ def lambda_handler(event, context):
     print("Newer Than TS: ", newer_than_ts)
     print("Filter Expression: ", filter_expression)
     request_num = 1
+    fetch_more_than_one = True
     if ddb_response['Count'] < requested_results:
-        fetch_more = True
+        fetch_more_than_one = True
+        # don't fetch more if we are getting newer videos
+        if newer_than_ts is not None:
+            fetch_more_than_one = False
     else:
+        fetch_more_than_one = False
+
+    if not fetch_more_than_one:
         consolidated_response = ddb_response
-        fetch_more = False
-    
+
+
     prev_last_evaluated_key = ddb_response.get('LastEvaluatedKey')
     consolidated_response['Items'].extend(ddb_response.get('Items', []))
     consolidated_response['Count'] += ddb_response.get('Count', 0)
@@ -141,7 +148,7 @@ def lambda_handler(event, context):
     print("After request #{}: total items {}, LastEvaluatedKey: {}".format(
         request_num, consolidated_response['Count'], ddb_response.get('LastEvaluatedKey')))
 
-    while consolidated_response['Count'] < requested_results and fetch_more:
+    while consolidated_response['Count'] < requested_results and fetch_more_than_one:
         print("Request: {} scanned {} and returned {} items.".format(request_num, ddb_response.get('ScannedCount', 0), ddb_response.get('Count', 0)))
         print(f"Left to fetch: {left_to_fetch}")
         print("ScannedCount last run: ", ddb_response.get('ScannedCount', 0))
@@ -192,15 +199,16 @@ def lambda_handler(event, context):
         if consolidated_response['Count'] >= requested_results:
             break
     # end while
-    if 'LastEvaluatedKey' in ddb_response:
-        consolidated_response['LastEvaluatedKey'] = ddb_response.get('LastEvaluatedKey')
-    else:
-        video_time = time.strptime(video_date, '%Y-%m-%d')
-        prev_day = time.localtime(time.mktime(video_time) - 86400)
-        video_date = time.strftime('%Y-%m-%d', prev_day)
-        consolidated_response['LastEvaluatedKey'] = {
-            'capture_date': video_date
-        }
+    if fetch_more_than_one:
+        if 'LastEvaluatedKey' in ddb_response:
+            consolidated_response['LastEvaluatedKey'] = ddb_response.get('LastEvaluatedKey')
+        else:
+            video_time = time.strptime(video_date, '%Y-%m-%d')
+            prev_day = time.localtime(time.mktime(video_time) - 86400)
+            video_date = time.strftime('%Y-%m-%d', prev_day)
+            consolidated_response['LastEvaluatedKey'] = {
+                'capture_date': video_date
+            }
 
     consolidated_response = generate_signed_uri(consolidated_response)
     return {
