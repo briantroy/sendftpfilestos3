@@ -184,8 +184,10 @@ def handle_post(event):
             status_code = 200 if existing_item else 201
             message = 'Viewed videos merged successfully' if existing_item else 'Viewed videos saved successfully'
             
-            # Determine if this was a merge operation (data changed)
-            was_merged = existing_item and (new_events_added > 0 or new_videos_added > 0)
+            # Determine if this was a merge operation (data changed) or if client sent empty lists
+            client_sent_empty_lists = len(new_viewed_events) == 0 and len(new_viewed_videos) == 0
+            client_sent_data = len(new_viewed_events) > 0 or len(new_viewed_videos) > 0
+            was_merged = existing_item and (client_sent_data or client_sent_empty_lists)
             
             response_data = {
                 'message': message,
@@ -205,7 +207,7 @@ def handle_post(event):
             if not existing_item:
                 response_data['createdAt'] = created_at
             
-            # If this was a merge operation, include the complete merged dataset
+            # If this was a merge operation or client sent empty lists, include the complete merged dataset
             if was_merged:
                 response_data['viewedEvents'] = merged_events
                 response_data['viewedVideos'] = merged_videos
