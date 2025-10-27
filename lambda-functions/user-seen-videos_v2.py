@@ -50,7 +50,6 @@ import json
 import boto3
 import os
 from botocore.exceptions import ClientError
-import urllib
 
 # Allowed origins for CORS
 ALLOWED_ORIGINS = {
@@ -166,7 +165,9 @@ def handle_get(event):
                 'error': 'userId is required',
                 'hint': 'Provide userId in path parameters (/viewed-videos/{userId}), query parameters (?userId=xxx), or request body'
             }, event)
-        user_id = urllib.parse.unquote(user_id)
+
+        # Note: Do NOT decode the user_id - DynamoDB stores it in the encoded format
+        # user_id will be something like "brian.roy%40brianandkelly.ws"
 
         # Get user events and videos from the two tables
         try:
