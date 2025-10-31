@@ -245,10 +245,17 @@ def handle_get(event):
         latest_video_timestamp = videos_result['latest_timestamp']
 
         if not viewed_events and not viewed_videos:
-            return create_response(404, {
-                'error': 'User not found',
-                'userId': user_id
-            }, event)
+            if since_timestamp:
+                return create_response(404, {
+                    'error': 'No viewed events or videos found for user since the specified timestamp',
+                    'userId': user_id,
+                    'since': since_timestamp
+                }, event)
+            else:
+                return create_response(404, {
+                    'error': 'No viewed events or videos found for user',
+                    'userId': user_id
+                }, event)
 
         # Get the most recent timestamp from the actual items returned
         timestamp = None
