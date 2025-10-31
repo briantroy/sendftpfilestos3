@@ -230,8 +230,8 @@ def handle_get(event):
 
         # Get user events and videos from the two tables
         try:
-            viewed_events = get_user_items(event_views_table, user_id, 'event_id', MAX_EVENTS_LIMIT, since_timestamp)
-            viewed_videos = get_user_items(video_views_table, user_id, 'video_id', MAX_VIDEOS_LIMIT, since_timestamp)
+            events_result = get_user_items(event_views_table, user_id, 'event_id', MAX_EVENTS_LIMIT, since_timestamp)
+            videos_result = get_user_items(video_views_table, user_id, 'video_id', MAX_VIDEOS_LIMIT, since_timestamp)
         except ClientError as e:
             print(f"Error retrieving record for user {user_id}: {e}")
             return create_response(500, {
@@ -239,14 +239,25 @@ def handle_get(event):
                 'message': str(e)
             }, event)
 
+        viewed_events = events_result['items']
+        viewed_videos = videos_result['items']
+        latest_event_timestamp = events_result['latest_timestamp']
+        latest_video_timestamp = videos_result['latest_timestamp']
+
         if not viewed_events and not viewed_videos:
             return create_response(404, {
                 'error': 'User not found',
                 'userId': user_id
             }, event)
 
-        # Get the most recent timestamp from both tables
-        timestamp = get_latest_timestamp(event_views_table, video_views_table, user_id)
+        # Get the most recent timestamp from the actual items returned
+        timestamp = None
+        if latest_event_timestamp and latest_video_timestamp:
+            timestamp = max(latest_event_timestamp, latest_video_timestamp)
+        elif latest_event_timestamp:
+            timestamp = latest_event_timestamp
+        elif latest_video_timestamp:
+            timestamp = latest_video_timestamp
 
         return create_response(200, {
             'userId': user_id,
@@ -268,7 +279,7 @@ def handle_get(event):
 def get_user_items(table, user_id, item_id_field, limit, since_timestamp=None):
     """
     Query a DynamoDB table to get items for a user up to the specified limit.
-    Returns a list of item IDs (in chronological order, most recent first).
+    Returns a dictionary containing the list of item IDs and the latest timestamp.
     Queries using viewed_timestamp as sort key for efficient time-ordered retrieval.
 
     Args:
@@ -277,6 +288,12 @@ def get_user_items(table, user_id, item_id_field, limit, since_timestamp=None):
         item_id_field: Field name for the item ID ('event_id' or 'video_id')
         limit: Maximum number of items to return from DynamoDB
         since_timestamp: Optional timestamp to filter items newer than this time
+
+    Returns:
+        dict: {
+            'items': list of item IDs (most recent first),
+            'latest_timestamp': the most recent viewed_timestamp from the returned items (or None)
+        }
     """
     try:
         # Build the query parameters
@@ -309,8 +326,13 @@ def get_user_items(table, user_id, item_id_field, limit, since_timestamp=None):
         # Use a set to track seen IDs and preserve order (most recent first)
         seen_ids = set()
         item_ids = []
+        latest_timestamp = None
 
         for item in items:
+            # Track the latest timestamp (first item has the most recent timestamp due to sort order)
+            if latest_timestamp is None and 'viewed_timestamp' in item:
+                latest_timestamp = item['viewed_timestamp']
+
             if item_id_field in item:
                 item_id = item[item_id_field]
                 # Only add if we haven't seen this ID yet (deduplication)
@@ -319,42 +341,15 @@ def get_user_items(table, user_id, item_id_field, limit, since_timestamp=None):
                     item_ids.append(item_id)
 
         print(f"Retrieved {len(item_ids)} unique items from {table.table_name} for user {user_id} (limit: {limit})")
-        return item_ids
+
+        return {
+            'items': item_ids,
+            'latest_timestamp': latest_timestamp
+        }
 
     except ClientError as e:
         print(f"Error querying {table.table_name} for user {user_id}: {e}")
         raise e
-
-
-def get_latest_timestamp(event_views_table, video_views_table, user_id):
-    """
-    Get the most recent viewed_timestamp from both tables for a user.
-    Uses viewed_timestamp sort key to efficiently get the latest item.
-    """
-    latest_timestamp = None
-
-    try:
-        # Query both tables for the most recent item (viewed_timestamp is the sort key)
-        for table in [event_views_table, video_views_table]:
-            response = table.query(
-                KeyConditionExpression='user_id = :uid',
-                ExpressionAttributeValues={
-                    ':uid': user_id
-                },
-                ScanIndexForward=False,  # Sort descending (most recent first)
-                Limit=1
-            )
-
-            items = response.get('Items', [])
-            if items and 'viewed_timestamp' in items[0]:
-                timestamp = items[0]['viewed_timestamp']
-                if not latest_timestamp or timestamp > latest_timestamp:
-                    latest_timestamp = timestamp
-
-    except ClientError as e:
-        print(f"Error getting latest timestamp for user {user_id}: {e}")
-
-    return latest_timestamp
 
 
 def create_response(status_code, body, event=None):
