@@ -4,6 +4,11 @@ Lambda function to retrieve user viewed events and videos from DynamoDB tables.
 This is a READ-ONLY function that queries the event-views and video-views tables.
 Views are saved in real-time via the save-event-video Lambda function.
 
+QUERY PARAMETERS:
+=================
+- since (optional): ISO 8601 timestamp to retrieve only items viewed after this time
+  Examples: ?since=2025-01-27T14:35:22.000Z or ?since=2025-01-27T14:35:22Z
+
 DYNAMODB TABLE SCHEMA:
 =====================
 
@@ -52,6 +57,7 @@ import json
 import boto3
 import os
 from botocore.exceptions import ClientError
+from datetime import datetime
 
 # Allowed origins for CORS
 ALLOWED_ORIGINS = {
@@ -137,10 +143,45 @@ def handle_options(event):
     }
 
 
+def validate_timestamp(timestamp_str):
+    """
+    Validate that a timestamp string is in valid ISO 8601 format.
+    Returns the validated timestamp string if valid, None otherwise.
+
+    Accepts formats like:
+    - 2025-01-27T14:35:22.000Z
+    - 2025-01-27T14:35:22Z
+    - 2025-01-27T14:35:22.123456Z
+    - 2025-01-27T14:35:22
+    """
+    if not timestamp_str or not isinstance(timestamp_str, str):
+        return None
+
+    # Try to parse the timestamp using common ISO 8601 formats
+    timestamp_formats = [
+        '%Y-%m-%dT%H:%M:%S.%fZ',  # With milliseconds and Z
+        '%Y-%m-%dT%H:%M:%SZ',      # Without milliseconds, with Z
+        '%Y-%m-%dT%H:%M:%S.%f',    # With milliseconds, no Z
+        '%Y-%m-%dT%H:%M:%S',       # Without milliseconds or Z
+    ]
+
+    for fmt in timestamp_formats:
+        try:
+            datetime.strptime(timestamp_str, fmt)
+            # If parsing succeeds, return the original string
+            return timestamp_str
+        except ValueError:
+            continue
+
+    # If none of the formats matched, return None
+    return None
+
+
 def handle_get(event):
     """
     Handle GET request to retrieve viewed videos for a user.
     Queries the event-views and video-views tables.
+    Supports optional 'since' query parameter to filter by timestamp.
     """
     try:
         # Get userId from path parameters, query parameters, or request body
@@ -175,10 +216,22 @@ def handle_get(event):
         # Note: Do NOT decode the user_id - DynamoDB stores it in the encoded format
         # user_id will be something like "brian.roy%40brianandkelly.ws"
 
+        # Get optional 'since' timestamp parameter
+        since_timestamp = query_parameters.get('since')
+        if since_timestamp:
+            # Validate the timestamp format
+            validated_since = validate_timestamp(since_timestamp)
+            if validated_since is None:
+                return create_response(400, {
+                    'error': 'Invalid since parameter',
+                    'message': 'The since parameter must be a valid ISO 8601 timestamp (e.g., 2025-01-27T14:35:22.000Z or 2025-01-27T14:35:22Z)'
+                }, event)
+            since_timestamp = validated_since
+
         # Get user events and videos from the two tables
         try:
-            viewed_events = get_user_items(event_views_table, user_id, 'event_id', MAX_EVENTS_LIMIT)
-            viewed_videos = get_user_items(video_views_table, user_id, 'video_id', MAX_VIDEOS_LIMIT)
+            viewed_events = get_user_items(event_views_table, user_id, 'event_id', MAX_EVENTS_LIMIT, since_timestamp)
+            viewed_videos = get_user_items(video_views_table, user_id, 'video_id', MAX_VIDEOS_LIMIT, since_timestamp)
         except ClientError as e:
             print(f"Error retrieving record for user {user_id}: {e}")
             return create_response(500, {
@@ -212,7 +265,7 @@ def handle_get(event):
         }, event)
 
 
-def get_user_items(table, user_id, item_id_field, limit):
+def get_user_items(table, user_id, item_id_field, limit, since_timestamp=None):
     """
     Query a DynamoDB table to get items for a user up to the specified limit.
     Returns a list of item IDs (in chronological order, most recent first).
@@ -223,16 +276,32 @@ def get_user_items(table, user_id, item_id_field, limit):
         user_id: User identifier
         item_id_field: Field name for the item ID ('event_id' or 'video_id')
         limit: Maximum number of items to return from DynamoDB
+        since_timestamp: Optional timestamp to filter items newer than this time
     """
     try:
-        response = table.query(
-            KeyConditionExpression='user_id = :uid',
-            ExpressionAttributeValues={
-                ':uid': user_id
-            },
-            ScanIndexForward=False,  # Sort descending (most recent first)
-            Limit=limit
-        )
+        # Build the query parameters
+        if since_timestamp:
+            # Query with both user_id and timestamp filter
+            response = table.query(
+                KeyConditionExpression='user_id = :uid AND viewed_timestamp > :since',
+                ExpressionAttributeValues={
+                    ':uid': user_id,
+                    ':since': since_timestamp
+                },
+                ScanIndexForward=False,  # Sort descending (most recent first)
+                Limit=limit
+            )
+            print(f"Querying {table.table_name} for user {user_id} since {since_timestamp}")
+        else:
+            # Query with just user_id
+            response = table.query(
+                KeyConditionExpression='user_id = :uid',
+                ExpressionAttributeValues={
+                    ':uid': user_id
+                },
+                ScanIndexForward=False,  # Sort descending (most recent first)
+                Limit=limit
+            )
 
         items = response.get('Items', [])
 
