@@ -44,6 +44,8 @@ ENVIRONMENT VARIABLES:
 - AWS_REGION: AWS region (default: us-east-1)
 - EVENT_VIEWS_TABLE_NAME: DynamoDB table name for event views (default: event-views)
 - VIDEO_VIEWS_TABLE_NAME: DynamoDB table name for video views (default: video-views)
+- MAX_EVENTS_LIMIT: Maximum number of event views to return (default: 500)
+- MAX_VIDEOS_LIMIT: Maximum number of video views to return (default: 500)
 """
 
 import json
@@ -64,6 +66,10 @@ event_views_table_name = os.environ.get('EVENT_VIEWS_TABLE_NAME', 'event-views')
 video_views_table_name = os.environ.get('VIDEO_VIEWS_TABLE_NAME', 'video-views')
 event_views_table = dynamodb.Table(event_views_table_name)
 video_views_table = dynamodb.Table(video_views_table_name)
+
+# Limits for number of items to return
+MAX_EVENTS_LIMIT = int(os.environ.get('MAX_EVENTS_LIMIT', '500'))
+MAX_VIDEOS_LIMIT = int(os.environ.get('MAX_VIDEOS_LIMIT', '500'))
 
 def lambda_handler(event, context):
     """
@@ -171,8 +177,8 @@ def handle_get(event):
 
         # Get user events and videos from the two tables
         try:
-            viewed_events = get_user_items(event_views_table, user_id, 'event_id')
-            viewed_videos = get_user_items(video_views_table, user_id, 'video_id')
+            viewed_events = get_user_items(event_views_table, user_id, 'event_id', MAX_EVENTS_LIMIT)
+            viewed_videos = get_user_items(video_views_table, user_id, 'video_id', MAX_VIDEOS_LIMIT)
         except ClientError as e:
             print(f"Error retrieving record for user {user_id}: {e}")
             return create_response(500, {
@@ -206,11 +212,17 @@ def handle_get(event):
         }, event)
 
 
-def get_user_items(table, user_id, item_id_field):
+def get_user_items(table, user_id, item_id_field, limit):
     """
-    Query a DynamoDB table to get all items for a user.
+    Query a DynamoDB table to get items for a user up to the specified limit.
     Returns a list of item IDs (in chronological order, most recent first).
     Queries using viewed_timestamp as sort key for efficient time-ordered retrieval.
+
+    Args:
+        table: DynamoDB table resource
+        user_id: User identifier
+        item_id_field: Field name for the item ID ('event_id' or 'video_id')
+        limit: Maximum number of items to return from DynamoDB
     """
     try:
         response = table.query(
@@ -218,22 +230,11 @@ def get_user_items(table, user_id, item_id_field):
             ExpressionAttributeValues={
                 ':uid': user_id
             },
-            ScanIndexForward=False  # Sort descending (most recent first)
+            ScanIndexForward=False,  # Sort descending (most recent first)
+            Limit=limit
         )
 
         items = response.get('Items', [])
-
-        # Handle pagination if there are more results
-        while 'LastEvaluatedKey' in response:
-            response = table.query(
-                KeyConditionExpression='user_id = :uid',
-                ExpressionAttributeValues={
-                    ':uid': user_id
-                },
-                ScanIndexForward=False,
-                ExclusiveStartKey=response['LastEvaluatedKey']
-            )
-            items.extend(response.get('Items', []))
 
         # Extract the item IDs from the results
         # Use a set to track seen IDs and preserve order (most recent first)
@@ -248,7 +249,7 @@ def get_user_items(table, user_id, item_id_field):
                     seen_ids.add(item_id)
                     item_ids.append(item_id)
 
-        print(f"Retrieved {len(item_ids)} unique items from {table.table_name} for user {user_id}")
+        print(f"Retrieved {len(item_ids)} unique items from {table.table_name} for user {user_id} (limit: {limit})")
         return item_ids
 
     except ClientError as e:
