@@ -132,6 +132,7 @@ def lambda_handler(event, context):
         fetch_more_than_one = True
         # don't fetch more if we are getting newer videos
         if newer_than_ts is not None:
+            print("Not fetching more because we are getting newer videos")
             fetch_more_than_one = False
     else:
         fetch_more_than_one = False
@@ -139,12 +140,13 @@ def lambda_handler(event, context):
     if not fetch_more_than_one:
         consolidated_response = ddb_response
 
-
-    prev_last_evaluated_key = ddb_response.get('LastEvaluatedKey')
-    consolidated_response['Items'].extend(ddb_response.get('Items', []))
-    consolidated_response['Count'] += ddb_response.get('Count', 0)
-    consolidated_response['DynDBRequests'] = request_num
-    left_to_fetch = requested_results - consolidated_response['Count']  
+    if fetch_more_than_one:
+        prev_last_evaluated_key = ddb_response.get('LastEvaluatedKey')
+        consolidated_response['Items'].extend(ddb_response.get('Items', []))
+        consolidated_response['Count'] += ddb_response.get('Count', 0)
+        consolidated_response['DynDBRequests'] = request_num
+        left_to_fetch = requested_results - consolidated_response['Count']
+          
     print("After request #{}: total items {}, LastEvaluatedKey: {}".format(
         request_num, consolidated_response['Count'], ddb_response.get('LastEvaluatedKey')))
 
@@ -202,7 +204,7 @@ def lambda_handler(event, context):
     if fetch_more_than_one:
         if 'LastEvaluatedKey' in ddb_response:
             consolidated_response['LastEvaluatedKey'] = ddb_response.get('LastEvaluatedKey')
-        else:
+        elif video_date:
             video_time = time.strptime(video_date, '%Y-%m-%d')
             prev_day = time.localtime(time.mktime(video_time) - 86400)
             video_date = time.strftime('%Y-%m-%d', prev_day)
@@ -291,6 +293,7 @@ def generate_signed_uri(data):
     s3_client = boto3.client('s3')
     bucket = "security-alarms"
     new_items = []
+    expiration = 3600 * 48
 
     for item in data['Items']:
         url = s3_client.generate_presigned_url(
@@ -298,7 +301,8 @@ def generate_signed_uri(data):
             Params={
                 'Bucket': bucket,
                 'Key': item['object_key']
-            }
+            },
+            ExpiresIn=expiration
         )
         item['uri'] = url
         if 'object_key_small' in item:
@@ -307,7 +311,8 @@ def generate_signed_uri(data):
                 Params={
                     'Bucket': bucket,
                     'Key': item['object_key_small']
-                }
+                },
+                ExpiresIn=expiration
             )
             item['uri_small_video'] = url
         # fin
@@ -317,7 +322,8 @@ def generate_signed_uri(data):
                 Params={
                     'Bucket': bucket,
                     'Key': item['thumbnail_key']
-                }
+                },
+                ExpiresIn=expiration
             )
             item['thumbnail_uri'] = url
         new_items.append(item)
